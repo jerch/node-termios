@@ -109,7 +109,7 @@ NAN_METHOD(CTermios::New)
             return Nan::ThrowError("to many arguments");
         if (info.Length() == 1) {
             if (info[0]->IsNumber()) {
-                int fd = info[0]->IntegerValue();
+                int fd = Nan::To<int>(info[0]).FromJust();
                 if (!isatty(fd)) {
                     std::string error(strerror(errno));
                     return Nan::ThrowError((std::string("fd is no tty - ") + error).c_str());
@@ -123,7 +123,7 @@ NAN_METHOD(CTermios::New)
                     return Nan::ThrowError((std::string("tcgetattr failed - ") + error).c_str());
                 }
             } else if (info[0]->IsObject() && IsInstance(info[0])) {
-                old = &Nan::ObjectWrap::Unwrap<CTermios>(info[0]->ToObject())->value_;
+                old = &Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[0]).ToLocalChecked())->value_;
             } else if (!info[0]->IsUndefined() && !info[0]->IsNull())
                 return Nan::ThrowError("first argument must be CTermios or file descriptor");
         }
@@ -206,26 +206,26 @@ NAN_GETTER(CTermios::IFlag_Getter)
 NAN_SETTER(CTermios::LFlag_Setter)
 {
     CTermios *obj = Nan::ObjectWrap::Unwrap<CTermios>(info.Holder());
-    obj->value_.c_lflag = (tcflag_t) value->Uint32Value();
+    obj->value_.c_lflag = (tcflag_t) Nan::To<uint32_t>(value).FromJust();
 }
 
 
 NAN_SETTER(CTermios::CFlag_Setter)
 {
     CTermios *obj = Nan::ObjectWrap::Unwrap<CTermios>(info.Holder());
-    obj->value_.c_cflag = (tcflag_t) value->Uint32Value();
+    obj->value_.c_cflag = (tcflag_t) Nan::To<uint32_t>(value).FromJust();
 }
 
 
 NAN_SETTER(CTermios::OFlag_Setter)
 {
     CTermios *obj = Nan::ObjectWrap::Unwrap<CTermios>(info.Holder());
-    obj->value_.c_oflag = (tcflag_t) value->Uint32Value();
+    obj->value_.c_oflag = (tcflag_t) Nan::To<uint32_t>(value).FromJust();
 }
 
 
 NAN_SETTER(CTermios::IFlag_Setter)
 {
     CTermios *obj = Nan::ObjectWrap::Unwrap<CTermios>(info.Holder());
-    obj->value_.c_iflag = (tcflag_t) value->Uint32Value();
+    obj->value_.c_iflag = (tcflag_t) Nan::To<uint32_t>(value).FromJust();
 }

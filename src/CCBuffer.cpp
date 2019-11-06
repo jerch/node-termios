@@ -74,7 +74,7 @@ NAN_INDEX_SETTER(CCBuffer::IndexSetter)
 {
     CCBuffer* obj = Nan::ObjectWrap::Unwrap<CCBuffer>(info.Holder());
     if (index < obj->length_ && value->IsNumber()) {
-        obj->value_[index] = (cc_t) value->Uint32Value();
+        obj->value_[index] = (cc_t) Nan::To<uint32_t>(value).FromJust();
         info.GetReturnValue().Set(Nan::New<Number>(obj->value_[index]));
     } else
         info.GetReturnValue().SetUndefined();
@@ -86,7 +86,7 @@ NAN_INDEX_ENUMERATOR(CCBuffer::IndexEnumerator)
     CCBuffer* obj = Nan::ObjectWrap::Unwrap<CCBuffer>(info.Holder());
     Local<Array> arr(Nan::New<Array>(obj->length_));
     for (unsigned int i=0; i<obj->length_; ++i)
-        arr->Set(i, Nan::New<Number>(i));
+        Nan::Set(arr, i, Nan::New<Number>(i));
     info.GetReturnValue().Set(arr);
 }
 

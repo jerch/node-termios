@@ -313,21 +313,21 @@ NAN_MODULE_INIT(init) {
     MODULE_EXPORT("BAUD", jsbaudrates);
 
     // helper functions - useful functions related to ttys
-    MODULE_EXPORT("isatty", Nan::New<FunctionTemplate>(Isatty)->GetFunction());
-    MODULE_EXPORT("ttyname", Nan::New<FunctionTemplate>(Ttyname)->GetFunction());
-    MODULE_EXPORT("ptsname", Nan::New<FunctionTemplate>(Ptsname)->GetFunction());
+    MODULE_EXPORT("isatty", Nan::GetFunction(Nan::New<FunctionTemplate>(Isatty)).ToLocalChecked());
+    MODULE_EXPORT("ttyname", Nan::GetFunction(Nan::New<FunctionTemplate>(Ttyname)).ToLocalChecked());
+    MODULE_EXPORT("ptsname", Nan::GetFunction(Nan::New<FunctionTemplate>(Ptsname)).ToLocalChecked());
 
     // termios functions
-    MODULE_EXPORT("tcgetattr", Nan::New<FunctionTemplate>(Tcgetattr)->GetFunction());
-    MODULE_EXPORT("tcsetattr", Nan::New<FunctionTemplate>(Tcsetattr)->GetFunction());
-    MODULE_EXPORT("tcsendbreak", Nan::New<FunctionTemplate>(Tcsendbreak)->GetFunction());
-    MODULE_EXPORT("tcdrain", Nan::New<FunctionTemplate>(Tcdrain)->GetFunction());
-    MODULE_EXPORT("tcflush", Nan::New<FunctionTemplate>(Tcflush)->GetFunction());
-    MODULE_EXPORT("tcflow", Nan::New<FunctionTemplate>(Tcflow)->GetFunction());
-    MODULE_EXPORT("cfgetispeed", Nan::New<FunctionTemplate>(Cfgetispeed)->GetFunction());
-    MODULE_EXPORT("cfgetospeed", Nan::New<FunctionTemplate>(Cfgetospeed)->GetFunction());
-    MODULE_EXPORT("cfsetispeed", Nan::New<FunctionTemplate>(Cfsetispeed)->GetFunction());
-    MODULE_EXPORT("cfsetospeed", Nan::New<FunctionTemplate>(Cfsetospeed)->GetFunction());
+    MODULE_EXPORT("tcgetattr", Nan::GetFunction(Nan::New<FunctionTemplate>(Tcgetattr)).ToLocalChecked());
+    MODULE_EXPORT("tcsetattr", Nan::GetFunction(Nan::New<FunctionTemplate>(Tcsetattr)).ToLocalChecked());
+    MODULE_EXPORT("tcsendbreak", Nan::GetFunction(Nan::New<FunctionTemplate>(Tcsendbreak)).ToLocalChecked());
+    MODULE_EXPORT("tcdrain", Nan::GetFunction(Nan::New<FunctionTemplate>(Tcdrain)).ToLocalChecked());
+    MODULE_EXPORT("tcflush", Nan::GetFunction(Nan::New<FunctionTemplate>(Tcflush)).ToLocalChecked());
+    MODULE_EXPORT("tcflow", Nan::GetFunction(Nan::New<FunctionTemplate>(Tcflow)).ToLocalChecked());
+    MODULE_EXPORT("cfgetispeed", Nan::GetFunction(Nan::New<FunctionTemplate>(Cfgetispeed)).ToLocalChecked());
+    MODULE_EXPORT("cfgetospeed", Nan::GetFunction(Nan::New<FunctionTemplate>(Cfgetospeed)).ToLocalChecked());
+    MODULE_EXPORT("cfsetispeed", Nan::GetFunction(Nan::New<FunctionTemplate>(Cfsetispeed)).ToLocalChecked());
+    MODULE_EXPORT("cfsetospeed", Nan::GetFunction(Nan::New<FunctionTemplate>(Cfsetospeed)).ToLocalChecked());
 
     // objects
     // NOTE: `SomeClass::init()` must be called prior usage in JS

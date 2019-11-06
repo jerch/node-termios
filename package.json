@@ -24,7 +24,7 @@
   "author": "Joerg Breitbart <j.breitbart@netzkolchose.de>",
   "license": "MIT",
   "dependencies": {
-    "nan": "^2.5.1"
+    "nan": "^2.14.0"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.42",

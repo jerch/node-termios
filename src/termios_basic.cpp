@@ -15,7 +15,7 @@ NAN_METHOD(Isatty)
     if (info.Length() != 1 || !info[0]->IsNumber()) {
         return Nan::ThrowError("usage: termios.isatty(fd)");
     }
-    int tty = isatty(info[0]->IntegerValue());
+    int tty = isatty(Nan::To<int>(info[0]).FromJust());
     if (!tty && errno == EBADF) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("isatty failed - ") + error).c_str());
@@ -30,7 +30,7 @@ NAN_METHOD(Ttyname)
     if (info.Length() != 1 || !info[0]->IsNumber()) {
         return Nan::ThrowError("usage: termios.ttyname(fd)");
     }
-    char *name = ttyname(info[0]->IntegerValue());
+    char *name = ttyname(Nan::To<int>(info[0]).FromJust());
     info.GetReturnValue().Set(
         (name) ? Nan::New<String>(name).ToLocalChecked() : Nan::EmptyString());
 }
@@ -42,7 +42,7 @@ NAN_METHOD(Ptsname)
     if (info.Length() != 1 || !info[0]->IsNumber()) {
         return Nan::ThrowError("usage: termios.ptsname(fd)");
     }
-    char *name = ptsname(info[0]->IntegerValue());
+    char *name = ptsname(Nan::To<int>(info[0]).FromJust());
     info.GetReturnValue().Set(
         (name) ? Nan::New<String>(name).ToLocalChecked() : Nan::EmptyString());
 }
@@ -57,9 +57,9 @@ NAN_METHOD(Tcgetattr)
           || !CTermios::IsInstance(info[1])) {
         return Nan::ThrowError("Usage: tcgetattr(fd, ctermios)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(info[1]->ToObject())->data();
+    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[1]).ToLocalChecked())->data();
     int res;
-    TEMP_FAILURE_RETRY(res = tcgetattr(info[0]->IntegerValue(), t));
+    TEMP_FAILURE_RETRY(res = tcgetattr(Nan::To<int>(info[0]).FromJust(), t));
     if (res) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("tcgetattr failed - ") + error).c_str());
@@ -78,9 +78,9 @@ NAN_METHOD(Tcsetattr)
           || !CTermios::IsInstance(info[2])) {
         return Nan::ThrowError("Usage: tcsetattr(fd, action, ctermios)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(info[2]->ToObject())->data();
+    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[2]).ToLocalChecked())->data();
     int res;
-    TEMP_FAILURE_RETRY(res = tcsetattr(info[0]->IntegerValue(), info[1]->IntegerValue(), t));
+    TEMP_FAILURE_RETRY(res = tcsetattr(Nan::To<int>(info[0]).FromJust(), Nan::To<int>(info[1]).FromJust(), t));
     if (res) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("tcsetattr failed - ") + error).c_str());
@@ -98,7 +98,7 @@ NAN_METHOD(Tcsendbreak)
         return Nan::ThrowError("usage: termios.tcsendbreak(fd, duration)");
     }
     int res;
-    TEMP_FAILURE_RETRY(res = tcsendbreak(info[0]->IntegerValue(), info[1]->IntegerValue()));
+    TEMP_FAILURE_RETRY(res = tcsendbreak(Nan::To<int>(info[0]).FromJust(), Nan::To<int>(info[1]).FromJust()));
     if (res) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("tcsendbreak failed - ") + error).c_str());
@@ -114,7 +114,7 @@ NAN_METHOD(Tcdrain)
         return Nan::ThrowError("usage: termios.tcdrain(fd)");
     }
     int res;
-    TEMP_FAILURE_RETRY(res = tcdrain(info[0]->IntegerValue()));
+    TEMP_FAILURE_RETRY(res = tcdrain(Nan::To<int>(info[0]).FromJust()));
     if (res) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("tcdrain failed - ") + error).c_str());
@@ -132,7 +132,7 @@ NAN_METHOD(Tcflush)
         return Nan::ThrowError("usage: termios.tcflush(fd, queue_selector)");
     }
     int res;
-    TEMP_FAILURE_RETRY(res = tcflush(info[0]->IntegerValue(), info[1]->IntegerValue()));
+    TEMP_FAILURE_RETRY(res = tcflush(Nan::To<int>(info[0]).FromJust(), Nan::To<int>(info[1]).FromJust()));
     if (res) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("tcflush failed - ") + error).c_str());
@@ -150,7 +150,7 @@ NAN_METHOD(Tcflow)
         return Nan::ThrowError("usage: termios.tcflow(fd, action)");
     }
     int res;
-    TEMP_FAILURE_RETRY(res = tcflow(info[0]->IntegerValue(), info[1]->IntegerValue()));
+    TEMP_FAILURE_RETRY(res = tcflow(Nan::To<int>(info[0]).FromJust(), Nan::To<int>(info[1]).FromJust()));
     if (res) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("tcflow failed - ") + error).c_str());
@@ -167,7 +167,7 @@ NAN_METHOD(Cfgetispeed)
           || !CTermios::IsInstance(info[0])) {
         return Nan::ThrowError("usage: termios.cfgetispeed(ctermios)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(info[0]->ToObject())->data();
+    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[0]).ToLocalChecked())->data();
     info.GetReturnValue().Set(Nan::New<Number>(cfgetispeed(t)));
 }
 
@@ -180,7 +180,7 @@ NAN_METHOD(Cfgetospeed)
           || !CTermios::IsInstance(info[0])) {
         return Nan::ThrowError("usage: termios.cfgetospeed(ctermios)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(info[0]->ToObject())->data();
+    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[0]).ToLocalChecked())->data();
     info.GetReturnValue().Set(Nan::New<Number>(cfgetospeed(t)));
 }
 
@@ -194,8 +194,8 @@ NAN_METHOD(Cfsetispeed)
           || !info[1]->IsNumber()) {
         return Nan::ThrowError("usage: termios.cfsetispeed(ctermios, speed)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(info[0]->ToObject())->data();
-    if (cfsetispeed(t, info[1]->IntegerValue())) {
+    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[0]).ToLocalChecked())->data();
+    if (cfsetispeed(t, Nan::To<int>(info[1]).FromJust())) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("cfsetispeed failed - ") + error).c_str());
     }
@@ -212,8 +212,8 @@ NAN_METHOD(Cfsetospeed)
           || !info[1]->IsNumber()) {
         return Nan::ThrowError("usage: termios.cfsetospeed(ctermios, speed)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(info[0]->ToObject())->data();
-    if (cfsetospeed(t, info[1]->IntegerValue())) {
+    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[0]).ToLocalChecked())->data();
+    if (cfsetospeed(t, Nan::To<int>(info[1]).FromJust())) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("cfsetospeed failed - ") + error).c_str());
     }
