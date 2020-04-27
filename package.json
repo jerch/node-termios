@@ -23,11 +23,11 @@
   "author": "Joerg Breitbart <j.breitbart@netzkolchose.de>",
   "license": "MIT",
   "dependencies": {
-    "nan": "^2.14.0"
+    "nan": "^2.14.1"
   },
   "devDependencies": {
     "@types/node": "^12.12.6",
-    "tslint": "^5.7.0",
-    "typescript": "^3.7.2"
+    "tslint": "^6.1.2",
+    "typescript": "^3.8.3"
   }
 }
