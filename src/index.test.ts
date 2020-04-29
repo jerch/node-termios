@@ -38,16 +38,14 @@ describe('native functions', () => {
       const path = native.ptsname((p as any)._fd);
       assert.notEqual(path, '');
       const fromPty: string[] = [];
-      p.onData(data => {
-        fromPty.push(data);
-        if (fromPty.length > 1) {
-          p.kill();
-          // ttyname on slave should return ptsname on master
-          assert.equal(fromPty[1].includes(path), true);
-          done();
-        }
-      });
+      p.onData(data => fromPty.push(data));
       p.write('tty\r');  // report ttyname from slave end
+      setTimeout(() => {
+        p.kill();
+        // ttyname on slave should return ptsname on master
+        assert.equal(fromPty.join('').includes(path), true);
+        done();
+      }, 100);
     });
     it('should return empty string on non pty master fd', () => {
       const fs = require('fs');
@@ -191,34 +189,30 @@ describe('Termios', () => {
 
 describe('terminal write/read test', () => {
   it('disable ECHO', (done) => {
-    const p = pty.spawn('sh', [], {});
+    const p = pty.spawn('cat', [], {});
     const t = new Termios((p as any)._fd);
     const fromPty: string[] = [];
-    let first = true;
     p.onData(data => {
-      if (first) {
-        p.write('#readable#');
-        t.c_lflag &= ~native.LFLAGS.ECHO;
-        t.writeTo((p as any)._fd, native.ACTION.TCSANOW);
-        setTimeout(() => {
-          // this must not show up on the terminal
-          p.write('*TOP_SECRET*');
-          t.c_lflag |= native.LFLAGS.ECHO;
-          t.writeTo((p as any)._fd, native.ACTION.TCSANOW);
-        }, 10);
-        setTimeout(() => {
-          p.write('#again_readable#');
-        }, 20);
-        first = false;
-      } else {
-        fromPty.push(data);
-        if (data.includes('#again_readable#')) {
-          p.kill();
-          assert.equal(fromPty.join('').includes('#readable##again_readable#'), true);
-          done();
-        }
+      fromPty.push(data);
+      if (data.includes('#again_readable#')) {
+        p.kill();
+        assert.equal(fromPty.join('').includes('#readable##again_readable#'), true);
+        done();
       }
     });
+    p.write('#readable#');
+    t.c_lflag &= ~native.LFLAGS.ECHO;
+    t.writeTo((p as any)._fd, native.ACTION.TCSADRAIN);
+    setTimeout(() => {
+      // this must not show up on the terminal
+      p.write('*TOP_SECRET*');
+      t.c_lflag |= native.LFLAGS.ECHO;
+      t.writeTo((p as any)._fd, native.ACTION.TCSADRAIN);
+    }, 50);
+    setTimeout(() => {
+      p.write('#again_readable#');
+    }, 100);
+
   });
 });
 
