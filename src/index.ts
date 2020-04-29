@@ -6,25 +6,29 @@ import * as path from 'path';
 const native: INative = require(path.join('..', 'build', 'Release', 'termios.node'));
 const s = native.ALL_SYMBOLS;
 
+const ENDIANNESS = require('os').endianness();
 const EXPLAIN = native.EXPLAIN;
 // we expect tcflag_t to be of width 4 (unsigned int), cc_t a single byte
+// dirty hack: on OSX tcflag_t is 8 byte, but only 4 lower bytes used
+// we can simply fix the values for LE
+if (require('os').platform() === 'darwin' && ENDIANNESS === 'LE') {
+    EXPLAIN.members.c_iflag.width = 4;
+    EXPLAIN.members.c_oflag.width = 4;
+    EXPLAIN.members.c_cflag.width = 4;
+    EXPLAIN.members.c_lflag.width = 4;
+}
 if (EXPLAIN.members.c_iflag.width !== 4) throw new Error('unexpected c_iflag type');
 if (EXPLAIN.members.c_oflag.width !== 4) throw new Error('unexpected c_oflag type');
 if (EXPLAIN.members.c_cflag.width !== 4) throw new Error('unexpected c_cflag type');
 if (EXPLAIN.members.c_lflag.width !== 4) throw new Error('unexpected c_lflag type');
 if (EXPLAIN.members.c_cc.elem_size !== 1) throw new Error('unexpected cc_t type');
 
-const ENDIANNESS = require('os').endianness();
 const ACCESSORS = {
     BE: {
-        2: [(b: Buffer, offset: number) => b.readUInt16BE(offset),
-            (b: Buffer, value: number, offset: number) => b.writeUInt16BE(value, offset)],
         4: [(b: Buffer, offset: number) => b.readUInt32BE(offset),
             (b: Buffer, value: number, offset: number) => b.writeUInt32BE(value, offset)]
     },
     LE: {
-        2: [(b: Buffer, offset: number) => b.readUInt16LE(offset),
-            (b: Buffer, value: number, offset: number) => b.writeUInt16LE(value, offset)],
         4: [(b: Buffer, offset: number) => b.readUInt32LE(offset),
             (b: Buffer, value: number, offset: number) => b.writeUInt32LE(value, offset)]
     }
