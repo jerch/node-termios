@@ -57,6 +57,7 @@ describe('native functions', () => {
     it('should load data into buffer', () => {
       const buf = Buffer.from(Array(native.EXPLAIN.size));
       native.tcgetattr(0, buf);
+      console.log(JSON.stringify(buf));
       assert.notEqual(buf[0], 0);
     });
     it('should reject wrong arguments', () => {
