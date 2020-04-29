@@ -342,4 +342,8 @@ NAN_MODULE_INIT(init) {
     MODULE_EXPORT("EXPLAIN", termios_explain);
 }
 
+#ifdef NAN_MODULE_WORKER_ENABLED
+NAN_MODULE_WORKER_ENABLED(termios, init)
+#else
 NODE_MODULE(termios, init)
+#endif

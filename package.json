@@ -10,7 +10,7 @@
     "tslint": "tslint src/**/*.ts",
     "install": "node install.js",
     "prepare": "npm run tsc",
-    "test": "mocha lib/*.test.js"
+    "test": "mocha --experimental-worker lib/*.test.js"
   },
   "keywords": [
     "termios",

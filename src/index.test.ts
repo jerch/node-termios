@@ -226,3 +226,33 @@ describe('terminal write/read test', () => {
     });
   });
 });
+
+describe('worker support', () => {
+  it('multiple workers calling into native code', (done) => {
+    const { Worker } = require('worker_threads');
+    const AMOUNT = 5;
+    const workers: Worker[] = [];
+    const messages: string[] = [];
+    for (let i = 0; i < AMOUNT; ++i) {
+      const worker = new Worker(`
+        const { Termios } = require('.');
+        const { parentPort } = require('worker_threads');
+        parentPort.once('message', msg => parentPort.postMessage(JSON.stringify(new Termios(0))));`
+        , {eval: true});
+      worker.once('message', (msg: string) => {
+        messages.push(msg);
+        if (messages.length === AMOUNT) {
+          // all should be equal
+          const first = messages[0];
+          for (msg of messages) {
+            assert.equal(msg, first);
+          }
+          done();
+        }
+      });
+      workers.push(worker);
+    }
+    // trigger `new Termios(0)` on all workers
+    workers.forEach(w => w.postMessage('ready'));
+  });
+});

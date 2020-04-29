@@ -1,6 +1,6 @@
 /* node_termios.h
  *
- * Copyright (C) 2017 Joerg Breitbart
+ * Copyright (C) 2017, 2020 Joerg Breitbart
  *
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
