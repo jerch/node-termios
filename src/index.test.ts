@@ -13,7 +13,7 @@ describe('native functions', () => {
     });
     it('false on non tty fd', () => {
       const fs = require('fs');
-      const fd = fs.openSync('/');
+      const fd = fs.openSync('/', 'r');
       assert.equal(native.isatty(fd), false);
       fs.closeSync(fd);
     });
@@ -27,7 +27,7 @@ describe('native functions', () => {
     });
     it('should return empty string on non tty fd', () => {
       const fs = require('fs');
-      const fd = fs.openSync('/');
+      const fd = fs.openSync('/', 'r');
       assert.equal(native.ttyname(fd), '');
       fs.closeSync(fd);
     });
@@ -49,7 +49,7 @@ describe('native functions', () => {
     });
     it('should return empty string on non pty master fd', () => {
       const fs = require('fs');
-      const fd = fs.openSync('/');
+      const fd = fs.openSync('/', 'r');
       assert.equal(native.ptsname(fd), '');
       fs.closeSync(fd);
       assert.equal(native.ptsname(0), '');
@@ -65,7 +65,7 @@ describe('native functions', () => {
       // illegal fd
       assert.throws(() => native.tcgetattr(-1, Buffer.from(Array(native.EXPLAIN.size))));
       const fs = require('fs');
-      const fd = fs.openSync('/');
+      const fd = fs.openSync('/', 'r');
       assert.throws(() => native.tcgetattr(fd, Buffer.from(Array(native.EXPLAIN.size))));
       fs.closeSync(fd);
       // misaligned buffer
@@ -96,7 +96,7 @@ describe('native functions', () => {
       // illegal fd
       assert.throws(() => native.tcsetattr(-1,native.ACTION.TCSANOW, Buffer.from(Array(native.EXPLAIN.size))));
       const fs = require('fs');
-      const fd = fs.openSync('/');
+      const fd = fs.openSync('/', 'r');
       assert.throws(() => native.tcsetattr(fd, native.ACTION.TCSANOW, Buffer.from(Array(native.EXPLAIN.size))));
       fs.closeSync(fd);
       // misaligned buffer
