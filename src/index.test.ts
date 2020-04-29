@@ -201,15 +201,15 @@ describe('terminal write/read test', () => {
       }
     });
     p.write('#readable#');
-    t.c_lflag &= ~native.LFLAGS.ECHO;
-    t.writeTo((p as any)._fd, native.ACTION.TCSADRAIN);
     setTimeout(() => {
       // this must not show up on the terminal
-      p.write('*TOP_SECRET*');
-      t.c_lflag |= native.LFLAGS.ECHO;
+      t.c_lflag &= ~native.LFLAGS.ECHO;
       t.writeTo((p as any)._fd, native.ACTION.TCSADRAIN);
+      p.write('*TOP_SECRET*');
     }, 50);
     setTimeout(() => {
+      t.c_lflag |= native.LFLAGS.ECHO;
+      t.writeTo((p as any)._fd, native.ACTION.TCSADRAIN);
       p.write('#again_readable#');
     }, 100);
 
