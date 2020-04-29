@@ -2,6 +2,10 @@ import { assert } from 'chai';
 import { native, Termios } from '.';
 import * as pty from 'node-pty';
 
+/**
+ * Note: Tests need stdin (0) to be a real TTY.
+ */
+
 describe('native functions', () => {
   describe('isatty', () => {
     it('true on stdin', () => {
@@ -143,19 +147,10 @@ describe('Termios', () => {
   });
   it('flags getter/setter', () => {
     const t = new Termios(0);
-    // on unmodified tty should be set
-    //    iflag: s.BRKINT | s.ICRNL
-    //    oflag: s.OPOST | s.ONLCR
-    //    lflag: s.ECHO | s.ICANON
+    // these assumptions are abit flakey and might fail on some CIs
     assert.notEqual(t.c_iflag, 0);
-    //assert.notEqual(t.c_iflag & native.IFLAGS.BRKINT, 0);
-    //assert.notEqual(t.c_iflag & native.IFLAGS.ICRNL, 0);
     assert.notEqual(t.c_oflag, 0);
-    //assert.notEqual(t.c_oflag & native.OFLAGS.OPOST, 0);
-    //assert.notEqual(t.c_oflag & native.OFLAGS.ONLCR, 0);
     assert.notEqual(t.c_lflag, 0);
-    //assert.notEqual(t.c_lflag & native.LFLAGS.ECHO, 0);
-    //assert.notEqual(t.c_lflag & native.LFLAGS.ICANON, 0);
 
     // toggle settings
     t.c_iflag &= ~(native.IFLAGS.BRKINT | native.IFLAGS.ICRNL);
