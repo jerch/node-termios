@@ -185,21 +185,46 @@ export interface IBAUD {
 /**
  * native module exports
  */
+interface ITermiosExplain {
+    size: number;
+    members: {
+        c_iflag: {
+            offset: number;
+            width: number;
+        };
+        c_oflag: {
+            offset: number;
+            width: number;
+        };
+        c_cflag: {
+            offset: number;
+            width: number;
+        };
+        c_lflag: {
+            offset: number;
+            width: number;
+        };
+        c_cc: {
+            offset: number;
+            elem_size: number;
+            width: number;
+        };
+    }
+}
 export interface INative {
     isatty(fd: number): boolean;
     ttyname(fd: number): string;
     ptsname(fd: number): string;
-    tcgetattr(fd: number, termios: ITermios): void;
-    tcsetattr(fd: number, action: number, termios: ITermios): void;
+    tcgetattr(fd: number, buffer: Buffer): void;
+    tcsetattr(fd: number, action: number, buffer: Buffer): void;
     tcsendbreak(fd: number, duration: number): void;
     tcdrain(fd: number): void;
     tcflush(fd: number, queue_selector: number): void;
     tcflow(fd: number, action: number): void;
-    cfgetispeed(termios: ITermios): number;
-    cfgetospeed(termios: ITermios): number;
-    cfsetispeed(termios: ITermios, speed: number): void;
-    cfsetospeed(termios: ITermios, speed: number): void;
-    CTermios: ITermios;
+    cfgetispeed(buffer: Buffer): number;
+    cfgetospeed(buffer: Buffer): number;
+    cfsetispeed(buffer: Buffer, speed: number): void;
+    cfsetospeed(buffer: Buffer, speed: number): void;
     ALL_SYMBOLS: IIFLAGS & IOFLAGS & ICFLAGS & ILFLAGS & ICC & IACTION & IFLUSH & IFLOW & IBAUD;
     IFLAGS: IIFLAGS;
     OFLAGS: IOFLAGS;
@@ -210,19 +235,18 @@ export interface INative {
     FLUSH: IFLUSH;
     FLOW: IFLOW;
     BAUD: IBAUD;
+    EXPLAIN: ITermiosExplain;
 }
 
 /**
  * interface of Termios
  */
 export interface ITermios {
-    new (value?: ITermios | number | null): ITermios;
-    (value?: ITermios | number | null): ITermios;
     c_iflag: number;
     c_oflag: number;
     c_cflag: number;
     c_lflag: number;
-    c_cc: number[];
+    c_cc: Buffer;
     writeTo(fd: number, action?: number): void;
     loadFrom(fd: number): void;
     getInputSpeed(): number;
@@ -232,6 +256,9 @@ export interface ITermios {
     setSpeed(baudrate: number): void;
     setraw(): void;
     setcbreak(): void;
-    setcokked(): void;
-    __proto__: any;  // needed to get awkward overloading done
+    setcooked(): void;
+}
+
+export interface ITermiosCtor {
+    new (from?: ITermios | number | null): ITermios;
 }

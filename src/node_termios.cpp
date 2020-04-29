@@ -1,14 +1,12 @@
 /* node_termios.cpp
  *
- * Copyright (C) 2017 Joerg Breitbart
+ * Copyright (C) 2017, 2020 Joerg Breitbart
  *
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
  */
 #include "node_termios.h"
 #include "termios_basic.h"
-#include "CTermios.h"
-#include "CCBuffer.h"
 
 
 void populate_symbol_maps(Local<Object> all,
@@ -329,12 +327,19 @@ NAN_MODULE_INIT(init) {
     MODULE_EXPORT("cfsetispeed", Nan::GetFunction(Nan::New<FunctionTemplate>(Cfsetispeed)).ToLocalChecked());
     MODULE_EXPORT("cfsetospeed", Nan::GetFunction(Nan::New<FunctionTemplate>(Cfsetospeed)).ToLocalChecked());
 
-    // objects
-    // NOTE: `SomeClass::init()` must be called prior usage in JS
-    //       to create the ctor function in memory.
-    //       For not exported classes simply call the init method here.
-    MODULE_EXPORT("CTermios", Nan::GetFunction(CTermios::init()).ToLocalChecked());
-    MODULE_EXPORT("CCBuffer", Nan::GetFunction(CCBuffer::init()).ToLocalChecked());
+    // explain termios structure
+    // EXPLAIN_MEMBERS --> {symbol: {offset: 0, width: 4}}
+    Local<Object> members = Nan::New<Object>();
+    EXPLAIN_MEMBER(members, struct termios, c_iflag);
+    EXPLAIN_MEMBER(members, struct termios, c_oflag);
+    EXPLAIN_MEMBER(members, struct termios, c_cflag);
+    EXPLAIN_MEMBER(members, struct termios, c_lflag);
+    EXPLAIN_MEMBER_ARRAY(members, struct termios, c_cc, cc_t);
+
+    Local<Object> termios_explain = Nan::New<Object>();
+    Nan::Set(termios_explain, Nan::New<String>("size").ToLocalChecked(), Nan::New<Number>(sizeof(struct termios)));
+    Nan::Set(termios_explain, Nan::New<String>("members").ToLocalChecked(), members);
+    MODULE_EXPORT("EXPLAIN", termios_explain);
 }
 
 NODE_MODULE(termios, init)
