@@ -42,6 +42,9 @@ NAN_METHOD(Ttyname)
 }
 
 
+/**
+ * ptsname_r shims for various platforms without native implementation.
+ */
 #ifdef __APPLE__
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -50,7 +53,7 @@ int ptsname_r_darwin(int fd, char *buf, size_t buflen) {
         errno = ENOTTY;
         return ENOTTY;
     }
-    char name[128] = {0};  // hardcoded to 128 bytes for ioctl
+    char name[128] = "";  // hardcoded to 128 bytes for ioctl
     struct stat stat_buf;
     int error = ioctl(fd, TIOCPTYGNAME, name);
     if (!error) {
@@ -91,9 +94,8 @@ int ptsname_r_freebsd(int fd, char *buf, size_t buflen) {
     errno = EINVAL;
     return EINVAL;
 }
-
 #endif
-// missing: Solaris
+
 
 NAN_METHOD(Ptsname)
 {
@@ -101,13 +103,19 @@ NAN_METHOD(Ptsname)
     if (info.Length() != 1 || !info[0]->IsNumber()) {
         return Nan::ThrowError("usage: termios.ptsname(fd)");
     }
-    char buf[CUSTOM_MAX_TTY_PATH] = {0};
-    #ifdef __APPLE__
-    int res = ptsname_r_darwin(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
-    #elif defined __FreeBSD__
-    int res = ptsname_r_freebsd(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+    #ifdef SOLARIS
+        // solaris claims to have thread-safe ptsname
+        char *buf = ptsname(Nan::To<int>(info[0]).FromJust());
+        int res = (buf) ? 1 : 0;
     #else
-    int res = ptsname_r(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+        char buf[CUSTOM_MAX_TTY_PATH] = "";
+        #ifdef __APPLE__
+        int res = ptsname_r_darwin(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+        #elif defined __FreeBSD__
+        int res = ptsname_r_freebsd(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+        #else
+        int res = ptsname_r(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+        #endif
     #endif
     info.GetReturnValue().Set(
         (res) ? Nan::EmptyString() : Nan::New<String>(buf).ToLocalChecked());
