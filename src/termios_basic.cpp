@@ -8,6 +8,7 @@
 #include "termios_basic.h"
 #include <errno.h>
 #include <unistd.h>
+#include <string.h>
 
 
 NAN_METHOD(Isatty)
@@ -41,6 +42,35 @@ NAN_METHOD(Ttyname)
 }
 
 
+#ifdef __APPLE__
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+
+int ptsname_r(int fd, char *buf, size_t buflen) {
+    if (!isatty(fd)) {
+        errno = ENOTTY;
+        return ENOTTY;
+    }
+    char name[128] = {0};  // hardcoded to 128 bytes for ioctl
+    struct stat stat_buf;
+    int error = ioctl(fd, TIOCPTYGNAME, name);
+    if (!error) {
+        if (stat(name, &stat_buf) == 0) {
+            int length = strlen(name);
+            if (length > buflen) {
+                errno = ERANGE;
+                return ERANGE;
+            }
+            strcpy(buf, name);
+            return 0;
+        }
+    }
+    errno = EINVAL;
+    return EINVAL;
+}
+#endif
+
+
 NAN_METHOD(Ptsname)
 {
     Nan::HandleScope scope;
@@ -48,6 +78,12 @@ NAN_METHOD(Ptsname)
         return Nan::ThrowError("usage: termios.ptsname(fd)");
     }
     char *name = ptsname(Nan::To<int>(info[0]).FromJust());
+
+    char buf[CUSTOM_MAX_TTY_PATH] = {0};
+    int res = ptsname_r(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+
+    printf("compare: '%s' '%s'\n", name, buf);
+
     info.GetReturnValue().Set(
         (name) ? Nan::New<String>(name).ToLocalChecked() : Nan::EmptyString());
 }
