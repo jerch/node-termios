@@ -14,6 +14,15 @@
 using namespace node;
 using namespace v8;
 
+// solaris define
+#if defined(sun) || defined(__sun)
+  #if defined(__SVR4) || defined(__svr4__)
+    #define SOLARIS 1
+  # else
+    #error "Old SunOS is not supported."
+  # endif
+#endif
+
 // macro for symbol export
 #define TERMIOS_EXPORT(o, js_obj, sym)                                        \
 Nan::Set(all, Nan::New<String>(#sym).ToLocalChecked(),Nan::New<Number>(sym)); \

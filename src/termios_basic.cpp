@@ -29,9 +29,16 @@ NAN_METHOD(Ttyname)
     if (info.Length() != 1 || !info[0]->IsNumber()) {
         return Nan::ThrowError("usage: termios.ttyname(fd)");
     }
-    char *name = ttyname(Nan::To<int>(info[0]).FromJust());
+    #ifdef SOLARIS
+    #define _POSIX_PTHREAD_SEMANTICS
+    char buf[_POSIX_PATH_MAX] = {0};
+    int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, _POSIX_PATH_MAX);
+    #else
+    char buf[TTY_NAME_MAX] = {0};
+    int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, TTY_NAME_MAX);
+    #endif
     info.GetReturnValue().Set(
-        (name) ? Nan::New<String>(name).ToLocalChecked() : Nan::EmptyString());
+        (res) ? Nan::EmptyString() : Nan::New<String>(buf).ToLocalChecked());
 }
 
 
