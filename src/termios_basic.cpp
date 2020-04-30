@@ -106,7 +106,7 @@ NAN_METHOD(Ptsname)
     #ifdef SOLARIS
         // solaris claims to have thread-safe ptsname
         char *buf = ptsname(Nan::To<int>(info[0]).FromJust());
-        int res = (buf) ? 1 : 0;
+        int res = (buf) ? 0 : 1;
     #else
         char buf[CUSTOM_MAX_TTY_PATH] = "";
         #ifdef __APPLE__

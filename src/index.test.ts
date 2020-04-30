@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 import { native, Termios } from '.';
 import * as pty from 'node-pty';
+import { platform } from 'os';
 
 /**
  * Note: Tests need stdin (0) to be a real TTY.
@@ -17,8 +18,12 @@ describe('native functions', () => {
       assert.equal(native.isatty(fd), false);
       fs.closeSync(fd);
     });
-    it('should throw for illegal fd', () => {
-      assert.throws(() => native.isatty(12345));
+    it('should throw for illegal fd (except on solaris)', () => {
+      if (platform() === 'sunos') {
+        assert.equal(native.isatty(12345), false);
+      } else {
+        assert.throws(() => native.isatty(12345));
+      }
     });
   });
   describe('ttyname', () => {
@@ -188,6 +193,8 @@ describe('Termios', () => {
 });
 
 describe('terminal write/read test', () => {
+  // cannot be tested on solaris (pty master does not support termios semantics)
+  if (platform() === 'sunos') return;
   it('disable ECHO', (done) => {
     const p = pty.spawn('cat', [], {});
     const t = new Termios((p as any)._fd);
@@ -212,7 +219,6 @@ describe('terminal write/read test', () => {
       t.writeTo((p as any)._fd, native.ACTION.TCSADRAIN);
       p.write('#again_readable#');
     }, 100);
-
   });
 });
 

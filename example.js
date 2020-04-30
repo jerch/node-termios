@@ -22,6 +22,7 @@ function exitHandler() {
   process.stdout.write('\x1b[0m');
   // termios restore
   initial.writeTo(0);
+  console.log();
 }
 
 // data read handler, triggers on every input in raw mode
