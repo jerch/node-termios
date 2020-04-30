@@ -45,8 +45,7 @@ NAN_METHOD(Ttyname)
 #ifdef __APPLE__
 #include <sys/ioctl.h>
 #include <sys/stat.h>
-
-int ptsname_r(int fd, char *buf, size_t buflen) {
+int ptsname_r_darwin(int fd, char *buf, size_t buflen) {
     if (!isatty(fd)) {
         errno = ENOTTY;
         return ENOTTY;
@@ -69,7 +68,7 @@ int ptsname_r(int fd, char *buf, size_t buflen) {
     return EINVAL;
 }
 #endif
-
+// missing: FreeBSD, Solaris
 
 NAN_METHOD(Ptsname)
 {
@@ -77,15 +76,14 @@ NAN_METHOD(Ptsname)
     if (info.Length() != 1 || !info[0]->IsNumber()) {
         return Nan::ThrowError("usage: termios.ptsname(fd)");
     }
-    char *name = ptsname(Nan::To<int>(info[0]).FromJust());
-
     char buf[CUSTOM_MAX_TTY_PATH] = {0};
+    #ifdef __APPLE__
+    int res = ptsname_r_darwin(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+    #else
     int res = ptsname_r(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
-
-    printf("compare: '%s' '%s'\n", name, buf);
-
+    #endif
     info.GetReturnValue().Set(
-        (name) ? Nan::New<String>(name).ToLocalChecked() : Nan::EmptyString());
+        (res) ? Nan::EmptyString() : Nan::New<String>(buf).ToLocalChecked());
 }
 
 
