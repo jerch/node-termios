@@ -7,6 +7,8 @@
  */
 #include "termios_basic.h"
 #include <errno.h>
+#include <unistd.h>
+
 
 NAN_METHOD(Isatty)
 {
@@ -34,8 +36,9 @@ NAN_METHOD(Ttyname)
     char buf[_POSIX_PATH_MAX] = {0};
     int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, _POSIX_PATH_MAX);
     #else
-    char buf[TTY_NAME_MAX] = {0};
-    int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, TTY_NAME_MAX);
+    int length = (int) sysconf(_SC_TTY_NAME_MAX);
+    char buf[length] = {0};
+    int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, length);
     #endif
     info.GetReturnValue().Set(
         (res) ? Nan::EmptyString() : Nan::New<String>(buf).ToLocalChecked());
