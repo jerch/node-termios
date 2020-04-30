@@ -24,6 +24,9 @@ using namespace v8;
   # endif
 #endif
 
+// path length for ttyname / ptsname
+#define CUSTOM_MAX_TTY_PATH 256
+
 // macro for symbol export
 #define TERMIOS_EXPORT(o, js_obj, sym)                                        \
 Nan::Set(all, Nan::New<String>(#sym).ToLocalChecked(),Nan::New<Number>(sym)); \

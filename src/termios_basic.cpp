@@ -33,16 +33,9 @@ NAN_METHOD(Ttyname)
     }
     #ifdef SOLARIS
     #define _POSIX_PTHREAD_SEMANTICS
-    char buf[_POSIX_PATH_MAX] = {0};
-    int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, _POSIX_PATH_MAX);
-    #else
-    int length = (int) sysconf(_SC_TTY_NAME_MAX);
-    if (length < 0) {  // some sane fallback
-        length = 256;
-    }
-    char buf[length] = {0};
-    int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, length);
     #endif
+    char buf[CUSTOM_MAX_TTY_PATH] = {0};
+    int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
     info.GetReturnValue().Set(
         (res) ? Nan::EmptyString() : Nan::New<String>(buf).ToLocalChecked());
 }
