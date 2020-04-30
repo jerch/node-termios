@@ -55,7 +55,7 @@ int ptsname_r_darwin(int fd, char *buf, size_t buflen) {
     int error = ioctl(fd, TIOCPTYGNAME, name);
     if (!error) {
         if (stat(name, &stat_buf) == 0) {
-            int length = strlen(name);
+            size_t length = strlen(name) + 1;
             if (length > buflen) {
                 errno = ERANGE;
                 return ERANGE;
@@ -68,7 +68,32 @@ int ptsname_r_darwin(int fd, char *buf, size_t buflen) {
     return EINVAL;
 }
 #endif
-// missing: FreeBSD, Solaris
+
+#ifdef __FreeBSD__
+#include <sys/param.h>
+#include <sys/ioctl.h>
+#include <paths.h>
+int ptsname_r_freebsd(int fd, char *buf, size_t buflen) {
+    if(ioctl(fd, TIOCPTMASTER)) {
+        errno = ENOTTY;
+        return ENOTTY;
+    }
+    char name[sizeof(_PATH_DEV) + SPECNAMELEN] = _PATH_DEV;
+    if (fdevname_r(fd, name + sizeof(_PATH_DEV) - 1, sizeof(name) - sizeof(_PATH_DEV) - 1) != NULL) {
+        size_t length = strlen(name) + 1;
+        if (length > buflen) {
+            errno = ERANGE;
+            return ERANGE;
+        }
+        strcpy(buf, name);
+        return 0;
+    }
+    errno = EINVAL;
+    return EINVAL;
+}
+
+#endif
+// missing: Solaris
 
 NAN_METHOD(Ptsname)
 {
@@ -79,6 +104,8 @@ NAN_METHOD(Ptsname)
     char buf[CUSTOM_MAX_TTY_PATH] = {0};
     #ifdef __APPLE__
     int res = ptsname_r_darwin(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+    #elif defined __FreeBSD__
+    int res = ptsname_r_freebsd(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
     #else
     int res = ptsname_r(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
     #endif
