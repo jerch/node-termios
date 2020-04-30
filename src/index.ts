@@ -3,76 +3,102 @@ if (process.platform === 'win32')
 
 import {ITermios, INative} from './interfaces';
 import * as path from 'path';
-const native: INative = require(path.join('..', 'build', 'Release', 'termios.node'));
+import { endianness, platform } from 'os';
+export const native: INative = require(path.join('..', 'build', 'Release', 'termios.node'));
 const s = native.ALL_SYMBOLS;
 
-const ENDIANNESS = require('os').endianness();
-const EXPLAIN = native.EXPLAIN;
-// we expect tcflag_t to be of width 4 (unsigned int), cc_t a single byte
-// dirty hack: on OSX tcflag_t is 8 byte, but only 4 lower bytes used
-// we can simply fix the values for LE
-if (require('os').platform() === 'darwin' && ENDIANNESS === 'LE') {
-    EXPLAIN.members.c_iflag.width = 4;
-    EXPLAIN.members.c_oflag.width = 4;
-    EXPLAIN.members.c_cflag.width = 4;
-    EXPLAIN.members.c_lflag.width = 4;
-}
-if (EXPLAIN.members.c_iflag.width !== 4) throw new Error('unexpected c_iflag type');
-if (EXPLAIN.members.c_oflag.width !== 4) throw new Error('unexpected c_oflag type');
-if (EXPLAIN.members.c_cflag.width !== 4) throw new Error('unexpected c_cflag type');
-if (EXPLAIN.members.c_lflag.width !== 4) throw new Error('unexpected c_lflag type');
-if (EXPLAIN.members.c_cc.elem_size !== 1) throw new Error('unexpected cc_t type');
+const ENDIAN = endianness();
 
+/**
+ * EXPLAIN holds the termios structure memory layout from C,
+ * so we know how to access struct members.
+ *
+ * We have to explicitly test the type widths, since they are not fixed typed.
+ * Still `tcflag_t`, typed as `unsigned int` on most platforms (except OSX),
+ * translates to a 4 byte endian-aware read/write at offset.
+ * We ignore the type being 2 bytes on older platforms, as they are not relevant.
+ *
+ * OSX/Darwin switched to a `unsigned long long` type (8 bytes), but only uses the
+ * lower 32 bits. Thus we can treat it as 4 byte at offset on LE. BE would need
+ * an offset shift by 4 bytes (currently not implemented).
+ * Once they decide to use higher bits, we have to rework the whole symbol export
+ * to use BigInt.
+ * On C side the macro _SAFE32_ ensures, that a wider symbol does not lose bits by accident.
+ *
+ * Tested on: Linux 5, OSX Mojave, FreeBSD 11, OpenIndiana 2019.
+ */
+const EXPLAIN = native.EXPLAIN;
+const T_SIZE = EXPLAIN.size;
+const T_MEM = EXPLAIN.members;
+
+// monkey patch width to 4 on darwin LE to pass the tests below
+if (platform() === 'darwin' && ENDIAN === 'LE') {
+    T_MEM.c_iflag.width = 4;
+    T_MEM.c_oflag.width = 4;
+    T_MEM.c_cflag.width = 4;
+    T_MEM.c_lflag.width = 4;
+}
+
+// refuse any platform, that does not hold flags in 4 bytes / control codes in 1 byte
+if (T_MEM.c_iflag.width !== 4) throw new Error('unexpected c_iflag type');
+if (T_MEM.c_oflag.width !== 4) throw new Error('unexpected c_oflag type');
+if (T_MEM.c_cflag.width !== 4) throw new Error('unexpected c_cflag type');
+if (T_MEM.c_lflag.width !== 4) throw new Error('unexpected c_lflag type');
+if (T_MEM.c_cc.elem_size !== 1) throw new Error('unexpected cc_t type');
+
+// Handles BE/LE 4 byte access.
 const ACCESSORS = {
     BE: {
-        4: [(b: Buffer, offset: number) => b.readUInt32BE(offset),
-            (b: Buffer, value: number, offset: number) => b.writeUInt32BE(value, offset)]
+        4: {
+            read: (b: Buffer, offset: number) => b.readUInt32BE(offset),
+            write: (b: Buffer, value: number, offset: number) => b.writeUInt32BE(value, offset)
+        }
     },
     LE: {
-        4: [(b: Buffer, offset: number) => b.readUInt32LE(offset),
-            (b: Buffer, value: number, offset: number) => b.writeUInt32LE(value, offset)]
+        4: {
+            read: (b: Buffer, offset: number) => b.readUInt32LE(offset),
+            write: (b: Buffer, value: number, offset: number) => b.writeUInt32LE(value, offset)
+        }
     }
 }
 
-class Termios implements ITermios {
+export class Termios implements ITermios {
     private _data: Buffer;
 
     public get c_iflag(): number {
-        return ACCESSORS[ENDIANNESS][EXPLAIN.members.c_iflag.width][0](this._data, EXPLAIN.members.c_iflag.offset);
+        return ACCESSORS[ENDIAN][T_MEM.c_iflag.width].read(this._data, T_MEM.c_iflag.offset);
     }
     public set c_iflag(value: number) {
-        ACCESSORS[ENDIANNESS][EXPLAIN.members.c_iflag.width][1](this._data, value, EXPLAIN.members.c_iflag.offset);
+        ACCESSORS[ENDIAN][T_MEM.c_iflag.width].write(this._data, value, T_MEM.c_iflag.offset);
     }
 
     public get c_oflag(): number {
-        return ACCESSORS[ENDIANNESS][EXPLAIN.members.c_oflag.width][0](this._data, EXPLAIN.members.c_oflag.offset);
+        return ACCESSORS[ENDIAN][T_MEM.c_oflag.width].read(this._data, T_MEM.c_oflag.offset);
     }
     public set c_oflag(value: number) {
-        ACCESSORS[ENDIANNESS][EXPLAIN.members.c_oflag.width][1](this._data, value, EXPLAIN.members.c_oflag.offset);
+        ACCESSORS[ENDIAN][T_MEM.c_oflag.width].write(this._data, value, T_MEM.c_oflag.offset);
     }
 
     public get c_cflag(): number {
-        return ACCESSORS[ENDIANNESS][EXPLAIN.members.c_cflag.width][0](this._data, EXPLAIN.members.c_cflag.offset);
+        return ACCESSORS[ENDIAN][T_MEM.c_cflag.width].read(this._data, T_MEM.c_cflag.offset);
     }
     public set c_cflag(value: number) {
-        ACCESSORS[ENDIANNESS][EXPLAIN.members.c_cflag.width][1](this._data, value, EXPLAIN.members.c_cflag.offset);
+        ACCESSORS[ENDIAN][T_MEM.c_cflag.width].write(this._data, value, T_MEM.c_cflag.offset);
     }
 
     public get c_lflag(): number {
-        return ACCESSORS[ENDIANNESS][EXPLAIN.members.c_lflag.width][0](this._data, EXPLAIN.members.c_lflag.offset);
+        return ACCESSORS[ENDIAN][T_MEM.c_lflag.width].read(this._data, T_MEM.c_lflag.offset);
     }
-
     public set c_lflag(value: number) {
-        ACCESSORS[ENDIANNESS][EXPLAIN.members.c_lflag.width][1](this._data, value, EXPLAIN.members.c_lflag.offset);
+        ACCESSORS[ENDIAN][T_MEM.c_lflag.width].write(this._data, value, T_MEM.c_lflag.offset);
     }
 
     public get c_cc(): Buffer {
-        const end = EXPLAIN.members.c_cc.offset + EXPLAIN.members.c_cc.width;
-        return this._data.subarray(EXPLAIN.members.c_cc.offset, end);
+        return this._data.subarray(T_MEM.c_cc.offset, T_MEM.c_cc.offset + T_MEM.c_cc.width);
     }
 
     constructor(from?: number | ITermios | null) {
-        this._data = Buffer.from(Array(EXPLAIN.size));
+        this._data = Buffer.from(Array(T_SIZE));
         if (typeof from === 'number') {
             this.loadFrom(from);
         } else if (from instanceof Termios) {
@@ -81,7 +107,7 @@ class Termios implements ITermios {
             // TODO: load defaults from ttydefaults.h
         } else if (from !== null) {
             // null explicitly loads empty termios data, anything else throws an error
-            throw new Error('unsupported fd value');
+            throw new Error('unsupported from value');
         }
         // make termios primitives enumerable
         for(const property of ['c_iflag', 'c_oflag', 'c_cflag', 'c_lflag', 'c_cc']) {
@@ -136,5 +162,3 @@ class Termios implements ITermios {
         // FIXME: set c_cc values;
     }
 }
-
-export {Termios, native};

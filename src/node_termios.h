@@ -19,6 +19,7 @@ using namespace v8;
 Nan::Set(all, Nan::New<String>(#sym).ToLocalChecked(),Nan::New<Number>(sym)); \
 Nan::Set(js_obj, Nan::New<String>(#sym).ToLocalChecked(),Nan::New<Number>(sym))
 
+
 // macro for module export
 #define MODULE_EXPORT(name, symbol)                                           \
 Nan::Set(target, Nan::New<String>(name).ToLocalChecked(), symbol)
@@ -49,5 +50,11 @@ Nan::Set(t##M, Nan::New<String>("offset").ToLocalChecked(), Nan::New<Number>(off
 Nan::Set(t##M, Nan::New<String>("elem_size").ToLocalChecked(), Nan::New<Number>(sizeof(MT)));    \
 Nan::Set(t##M, Nan::New<String>("width").ToLocalChecked(), Nan::New<Number>(member_size(S, M))); \
 Nan::Set(T, Nan::New<String>(#M).ToLocalChecked(), t##M)
+
+// macro to spot symbol overflow in 32bit
+#define _SAFE32_1(X1) 0 <= X1 && X1 <= 0xFFFFFFFF
+#define _SAFE32_2(X1, X2) _SAFE32_1(X1) && _SAFE32_1(X2)
+#define _SAFE32_4(X1, X2, X3, X4) _SAFE32_2(X1, X2) && _SAFE32_2(X3, X4)
+#define _SAFE32_8(X1, X2, X3, X4, X5, X6, X7, X8) _SAFE32_4(X1, X2, X3, X4) && _SAFE32_4(X5, X6, X7, X8)
 
 #endif // NODE_TERMIOS_H
