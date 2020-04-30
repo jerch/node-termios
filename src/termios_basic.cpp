@@ -37,6 +37,9 @@ NAN_METHOD(Ttyname)
     int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, _POSIX_PATH_MAX);
     #else
     int length = (int) sysconf(_SC_TTY_NAME_MAX);
+    if (length < 0) {  // some sane fallback
+        length = 256;
+    }
     char buf[length] = {0};
     int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, length);
     #endif
