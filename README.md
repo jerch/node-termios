@@ -1,39 +1,43 @@
-### Classes
+## Access termios settings from nodejs.
 
-- `Termios` Class to hold termios struct data.
+The module exports a `Termios` class, that encapsulates termios struct data. 
 
-    #### Attributes
+### Properties
     
-    - `c_iflag`: Integer representing the input mode flags.
-    - `c_oflag`: Integer representing the output mode flags.
-    - `c_cflag`: Integer representing the character mode flags.
-    - `c_lflag`: Integer representing the local mode flags.
-    - `c_cc`: Object representing the control character settings.
+- `c_iflag`: Integer representing the input mode flags.
+- `c_oflag`: Integer representing the output mode flags.
+- `c_cflag`: Integer representing the character mode flags.
+- `c_lflag`: Integer representing the local mode flags.
+- `c_cc`: Buffer representing the control code settings.
 
-    #### Methods
+### Methods
     
-    - `constructor(arg)`: Create new termios object.
-      To prefill termios data set `arg` to
-      a valid file descriptor or another Termios object.
-    - `loadFrom(fd)`: Load termios data from file descriptor `fd`.
-    - `writeTo(fd, action)`: Set termios data of file descriptor `fd`.
-      `action` must be one of `termios.ACTION` (defaults to `TCSAFLUSH`).
-    - `getInputSpeed()`: Returns input channel baud rate setting.
-    - `getOutputSpeed()`: Returns output channel baud rate setting.
-    - `setInputSpeed(speed)`: Sets input channel baud rate.
-      `speed` must be one of the predefined baudrates in `termios.BAUD`.
-    - `setOutputSpeed(speed)`: Sets output channel baud rate.
-      `speed` must be one of the predefined baudrates in `termios.BAUD`.
-    - `setSpeed(speed)`: Sets input and output channel baud rate.
-      `speed` must be one of the predefined baudrates in `termios.BAUD`.
-    - `setraw()`: Set termios data to raw mode (taken from Python).
-    - `setcbreak()`: Set termios data to cbreak mode (taken from Python).
-    - `toBuffer()`: Creates a node::Buffer representation of termios data.
+- `constructor(from?: number | ITermios | null)`  
+  Create new `Termios` object. `from` can be a valid file descriptor (number),
+  another `Termios` object (copy constructor) or `null` (all data zeroed out,
+  currently the same as `undefined`).
+- `loadFrom(fd: number): void`  
+  Load termios data from file descriptor `fd`.
+- `writeTo(fd: number, action?: number): void`  
+  Write termios data to file descriptor `fd`. `action` should be one of `native.ACTION`
+  (default: `native.ACTION.TCSAFLUSH`).
+- `getInputSpeed(): number`  
+  Return input channel baud rate setting as in `native.BAUD`.
+- `getOutputSpeed(): number`  
+  Return output channel baud rate setting as in `native.BAUD`.
+- `setInputSpeed(speed: number): void`  
+  Set input channel baud rate. `speed` should be one of the baudrates in `native.BAUD`.
+- `setOutputSpeed(speed: number): void`  
+  Set output channel baud rate. `speed` should be one of the baudrates in `native.BAUD`.
+- `setSpeed(speed: number): void`  
+  Set input and output channel baud rate. `speed` should be one of the baudrates in `native.BAUD`.
+- `setraw(): void`  
+  Convenient method to set termios data to raw mode (values taken from Python).
+- `setcbreak(): void`  
+  Convenient method to set termios data to cbreak mode (values taken from Python).
 
-### Termios.h symbols
-
-The module exports known symbols defined by the
-underlying termios.h (platform dependent) and low level functions under `.native`.
+The module further exports known symbols defined by the
+underlying termios.h (platform dependent) and low level functions under `.native`:
 
 - `ALL_SYMBOLS`: All known symbols.
 - `IFLAGS`: Input mode symbols.
@@ -41,43 +45,85 @@ underlying termios.h (platform dependent) and low level functions under `.native
 - `CFLAGS`: Character mode symbols.
 - `LFLAGS`: Local mode symbols.
 - `CC`: Valid symbols defined for control character settings.
-- `ACTION`: Symbols defined for `tcsetattr`
-  (when the changes should be applied).
+- `ACTION`: Actions defined for `tcsetattr`.
 - `FLUSH`: Symbols for `tcflush`.
 - `FLOW`: Symbols for `tcflow`.
 - `BAUD`: Defined baudrates of the platform.
+- `EXPLAIN`: `struct termios` member alignments and sizes.
 
 ### Low level functions
 
-- `isatty(fd)`: Test if file descriptor `fd` is a tty.
-- `ttyname(fd)`: Return tty file name for `fd`.
-  Return empty string for an invalid file descriptor.
-- `ptsname(fd)`: Return pts file name for file descriptor `fd`.
-  This can only be used from the master end of a pty.
-  For slave end use `ttyname`.
-- `tcgetattr(fd, termios)`: Get termios data for file descriptor `fd`.
-  `termios` must be a Termios object.
-- `tcsetattr(fd, action, termios)`: Set termios data for file descriptor `fd`.
-  `action` must be one of `termios.ACTION`. `termios` must be a Termios object.
-- `tcsendbreak(fd, duration)`
-- `tcdrain(fd)`
-- `tcflush(fd, queue_selector)`
-- `tcflow(fd, flowaction)`
-- `cfgetispeed(termios)`
-- `cfgetospeed(termios)`
-- `cfsetispeed(termios, speed)`
-- `cfsetospeed(termios, speed)`
+The low level function are direct mappings of the C functions,
+where `fd` should be a valid TTY file descriptor
+and `buffer` is a nodejs buffer of length `native.EXPLAIN.size`
+to hold the termios structure data. Additional enum like arguments
+are mapped in `native` (see listing above).
+
+Also see `termios` manpage for further details.
+
+- `isatty(fd: number): boolean`  
+  Test if file descriptor `fd` is a tty. Might throw if `fd` is not valid.
+- `ttyname(fd: number): string`  
+  Return tty file name for `fd`, or empty string (invalid file descriptor).
+- `ptsname(fd: number): string`  
+  Return pts file name for file descriptor `fd`, or empty string (invalid file descriptor).
+  Note that this only works on a master end of a PTY. For slave end use `ttyname`.
+- `tcgetattr(fd: number, buffer: Buffer): void`  
+  Load termios data for file descriptor `fd` in `buffer`. The given buffer must have a length
+  of `native.EXPLAIN.size`.
+- `tcsetattr(fd: number, action: number, buffer: Buffer): void`  
+  Write termios data held in `buffer` to file descriptor `fd`. `action` should be one of `termios.ACTION`.
+  The given buffer must have a length of `native.EXPLAIN.size`.
+- `tcsendbreak(fd: number, duration: number): void`  
+- `tcdrain(fd: number): void`  
+- `tcflush(fd: number, queue_selector: number): void`
+- `tcflow(fd: number, flowaction: number)`
+- `cfgetispeed(buffer: Buffer): void`
+- `cfgetospeed(buffer: Buffer)`
+- `cfsetispeed(buffer: Buffer, speed: number): void`
+- `cfsetospeed(buffer: Buffer, speed: number): void`
 
 
-### Example
+### Examples
 
-The example demostrates how to switch off echoing on STDIN.
+The example demostrates how to switch off/on echoing on STDIN:
 ```javascript
-var Termios = require('node-termios').Termios;
-var sym = require('node-termios').native.ALL_SYMBOLS;
+const { Termios, native: { LFLAGS } } = require('node-termios');
 
-var tty = new Termios(0);
-tty.c_lflag &= ~(sym.ECHO | sym.ECHONL);
-tty.writeTo(0);
+// load termios data from STDIN
+var t = new Termios(0);
+// disable ECHO (not yet written)
+t.c_lflag &= ~LFLAGS.ECHO;
+// write back to STDIN
+t.writeTo(0);
+// now interactive input does not show up anymore
+...
+
+// switch on again when done
+t.c_lflag |= LFLAGS.ECHO;
+t.writeTo(0);
 ```
 
+A typical usage pattern seen in C is to store the settings,
+do some needed customizations like entering raw mode
+and restoring old settings afterwards:
+```javascript
+const { Termios } = require('node-termios');
+
+// save current settings to restore later on
+const initial = new Termios(some_tty_fd);
+// create copy and enter raw mode
+const altered = new Termios(initial);
+altered.setraw();
+altered.writeTo(some_tty_fd);
+// raw mode, thus every single data event shows up
+...
+// restore old settings
+initial.writeTo(some_tty_fd);
+```
+
+Note that in the interactive nodejs shell the standard filedescriptors are already
+customized by the nodejs env, and should not be handled like in the example above,
+or the terminal might break with the shell's expectations.
+
+For a silly yet slightly more advanced example, see `example.js`.

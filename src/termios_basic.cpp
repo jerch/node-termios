@@ -1,13 +1,15 @@
 /* termios_basic.cpp
  *
- * Copyright (C) 2017 Joerg Breitbart
+ * Copyright (C) 2017, 2020 Joerg Breitbart
  *
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
  */
 #include "termios_basic.h"
-#include "CTermios.h"
 #include <errno.h>
+#include <unistd.h>
+#include <string.h>
+
 
 NAN_METHOD(Isatty)
 {
@@ -30,10 +32,69 @@ NAN_METHOD(Ttyname)
     if (info.Length() != 1 || !info[0]->IsNumber()) {
         return Nan::ThrowError("usage: termios.ttyname(fd)");
     }
-    char *name = ttyname(Nan::To<int>(info[0]).FromJust());
+    #ifdef SOLARIS
+    #define _POSIX_PTHREAD_SEMANTICS
+    #endif
+    char buf[CUSTOM_MAX_TTY_PATH] = {0};
+    int res = ttyname_r(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
     info.GetReturnValue().Set(
-        (name) ? Nan::New<String>(name).ToLocalChecked() : Nan::EmptyString());
+        (res) ? Nan::EmptyString() : Nan::New<String>(buf).ToLocalChecked());
 }
+
+
+/**
+ * ptsname_r shims for various platforms without native implementation.
+ */
+#ifdef __APPLE__
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+int ptsname_r_darwin(int fd, char *buf, size_t buflen) {
+    if (!isatty(fd)) {
+        errno = ENOTTY;
+        return ENOTTY;
+    }
+    char name[128] = "";  // hardcoded to 128 bytes for ioctl
+    struct stat stat_buf;
+    int error = ioctl(fd, TIOCPTYGNAME, name);
+    if (!error) {
+        if (stat(name, &stat_buf) == 0) {
+            size_t length = strlen(name) + 1;
+            if (length > buflen) {
+                errno = ERANGE;
+                return ERANGE;
+            }
+            strcpy(buf, name);
+            return 0;
+        }
+    }
+    errno = EINVAL;
+    return EINVAL;
+}
+#endif
+
+#ifdef __FreeBSD__
+#include <sys/param.h>
+#include <sys/ioctl.h>
+#include <paths.h>
+int ptsname_r_freebsd(int fd, char *buf, size_t buflen) {
+    if(ioctl(fd, TIOCPTMASTER)) {
+        errno = ENOTTY;
+        return ENOTTY;
+    }
+    char name[sizeof(_PATH_DEV) + SPECNAMELEN] = _PATH_DEV;
+    if (fdevname_r(fd, name + sizeof(_PATH_DEV) - 1, sizeof(name) - sizeof(_PATH_DEV) - 1) != NULL) {
+        size_t length = strlen(name) + 1;
+        if (length > buflen) {
+            errno = ERANGE;
+            return ERANGE;
+        }
+        strcpy(buf, name);
+        return 0;
+    }
+    errno = EINVAL;
+    return EINVAL;
+}
+#endif
 
 
 NAN_METHOD(Ptsname)
@@ -42,9 +103,22 @@ NAN_METHOD(Ptsname)
     if (info.Length() != 1 || !info[0]->IsNumber()) {
         return Nan::ThrowError("usage: termios.ptsname(fd)");
     }
-    char *name = ptsname(Nan::To<int>(info[0]).FromJust());
+    #ifdef SOLARIS
+        // solaris claims to have thread-safe ptsname
+        char *buf = ptsname(Nan::To<int>(info[0]).FromJust());
+        int res = (buf) ? 0 : 1;
+    #else
+        char buf[CUSTOM_MAX_TTY_PATH] = "";
+        #ifdef __APPLE__
+        int res = ptsname_r_darwin(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+        #elif defined __FreeBSD__
+        int res = ptsname_r_freebsd(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+        #else
+        int res = ptsname_r(Nan::To<int>(info[0]).FromJust(), buf, CUSTOM_MAX_TTY_PATH);
+        #endif
+    #endif
     info.GetReturnValue().Set(
-        (name) ? Nan::New<String>(name).ToLocalChecked() : Nan::EmptyString());
+        (res) ? Nan::EmptyString() : Nan::New<String>(buf).ToLocalChecked());
 }
 
 
@@ -53,13 +127,16 @@ NAN_METHOD(Tcgetattr)
     Nan::HandleScope scope;
     if (info.Length() != 2
           || !info[0]->IsNumber()
-          || !info[1]->IsObject()
-          || !CTermios::IsInstance(info[1])) {
-        return Nan::ThrowError("Usage: tcgetattr(fd, ctermios)");
+          || !info[1]->IsObject()) {
+        return Nan::ThrowError("Usage: tcgetattr(fd, buffer)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[1]).ToLocalChecked())->data();
+    if (!Buffer::HasInstance(info[1]) || Buffer::Length(info[1]) != sizeof(struct termios)) {
+        return Nan::ThrowError("wrong buffer type");
+    }
+    struct termios* buf = (struct termios *) Buffer::Data(info[1]);
+
     int res;
-    TEMP_FAILURE_RETRY(res = tcgetattr(Nan::To<int>(info[0]).FromJust(), t));
+    TEMP_FAILURE_RETRY(res = tcgetattr(Nan::To<int>(info[0]).FromJust(), buf));
     if (res) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("tcgetattr failed - ") + error).c_str());
@@ -74,13 +151,17 @@ NAN_METHOD(Tcsetattr)
     if (info.Length() != 3
           || !info[0]->IsNumber()
           || !info[1]->IsNumber()
-          || !info[2]->IsObject()
-          || !CTermios::IsInstance(info[2])) {
-        return Nan::ThrowError("Usage: tcsetattr(fd, action, ctermios)");
+          || !info[2]->IsObject()) {
+        return Nan::ThrowError("Usage: tcsetattr(fd, action, buffer)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[2]).ToLocalChecked())->data();
+
+    if (!Buffer::HasInstance(info[2]) || Buffer::Length(info[2]) != sizeof(struct termios)) {
+        return Nan::ThrowError("wrong buffer type");
+    }
+    struct termios *buf = (struct termios *) Buffer::Data(info[2]);
+
     int res;
-    TEMP_FAILURE_RETRY(res = tcsetattr(Nan::To<int>(info[0]).FromJust(), Nan::To<int>(info[1]).FromJust(), t));
+    TEMP_FAILURE_RETRY(res = tcsetattr(Nan::To<int>(info[0]).FromJust(), Nan::To<int>(info[1]).FromJust(), buf));
     if (res) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("tcsetattr failed - ") + error).c_str());
@@ -163,12 +244,14 @@ NAN_METHOD(Cfgetispeed)
 {
     Nan::HandleScope scope;
     if (info.Length() != 1
-          || !info[0]->IsObject()
-          || !CTermios::IsInstance(info[0])) {
-        return Nan::ThrowError("usage: termios.cfgetispeed(ctermios)");
+          || !info[0]->IsObject()) {
+        return Nan::ThrowError("usage: termios.cfgetispeed(buffer)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[0]).ToLocalChecked())->data();
-    info.GetReturnValue().Set(Nan::New<Number>(cfgetispeed(t)));
+    if (!Buffer::HasInstance(info[0]) || Buffer::Length(info[0]) != sizeof(struct termios)) {
+        return Nan::ThrowError("wrong buffer type");
+    }
+    struct termios *buf = (struct termios *) Buffer::Data(info[0]);
+    info.GetReturnValue().Set(Nan::New<Number>(cfgetispeed(buf)));
 }
 
 
@@ -176,12 +259,14 @@ NAN_METHOD(Cfgetospeed)
 {
     Nan::HandleScope scope;
     if (info.Length() != 1
-          || !info[0]->IsObject()
-          || !CTermios::IsInstance(info[0])) {
-        return Nan::ThrowError("usage: termios.cfgetospeed(ctermios)");
+          || !info[0]->IsObject()) {
+        return Nan::ThrowError("usage: termios.cfgetospeed(buffer)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[0]).ToLocalChecked())->data();
-    info.GetReturnValue().Set(Nan::New<Number>(cfgetospeed(t)));
+    if (!Buffer::HasInstance(info[0]) || Buffer::Length(info[0]) != sizeof(struct termios)) {
+        return Nan::ThrowError("wrong buffer type");
+    }
+    struct termios *buf = (struct termios *) Buffer::Data(info[0]);
+    info.GetReturnValue().Set(Nan::New<Number>(cfgetospeed(buf)));
 }
 
 
@@ -190,12 +275,14 @@ NAN_METHOD(Cfsetispeed)
     Nan::HandleScope scope;
     if (info.Length() != 2
           || !info[0]->IsObject()
-          || !CTermios::IsInstance(info[0])
           || !info[1]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.cfsetispeed(ctermios, speed)");
+        return Nan::ThrowError("usage: termios.cfsetispeed(buffer, speed)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[0]).ToLocalChecked())->data();
-    if (cfsetispeed(t, Nan::To<int>(info[1]).FromJust())) {
+    if (!Buffer::HasInstance(info[0]) || Buffer::Length(info[0]) != sizeof(struct termios)) {
+        return Nan::ThrowError("wrong buffer type");
+    }
+    struct termios *buf = (struct termios *) Buffer::Data(info[0]);
+    if (cfsetispeed(buf, Nan::To<int>(info[1]).FromJust())) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("cfsetispeed failed - ") + error).c_str());
     }
@@ -208,15 +295,16 @@ NAN_METHOD(Cfsetospeed)
     Nan::HandleScope scope;
     if (info.Length() != 2
           || !info[0]->IsObject()
-          || !CTermios::IsInstance(info[0])
           || !info[1]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.cfsetospeed(ctermios, speed)");
+        return Nan::ThrowError("usage: termios.cfsetospeed(buffer, speed)");
     }
-    struct termios *t = Nan::ObjectWrap::Unwrap<CTermios>(Nan::To<Object>(info[0]).ToLocalChecked())->data();
-    if (cfsetospeed(t, Nan::To<int>(info[1]).FromJust())) {
+    if (!Buffer::HasInstance(info[0]) || Buffer::Length(info[0]) != sizeof(struct termios)) {
+        return Nan::ThrowError("wrong buffer type");
+    }
+    struct termios *buf = (struct termios *) Buffer::Data(info[0]);
+    if (cfsetospeed(buf, Nan::To<int>(info[1]).FromJust())) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("cfsetospeed failed - ") + error).c_str());
     }
     info.GetReturnValue().SetUndefined();
 }
-

@@ -1,30 +1,33 @@
 /* node_termios.cpp
  *
- * Copyright (C) 2017 Joerg Breitbart
+ * Copyright (C) 2017, 2020 Joerg Breitbart
  *
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
  */
 #include "node_termios.h"
 #include "termios_basic.h"
-#include "CTermios.h"
-#include "CCBuffer.h"
 
 
-void populate_symbol_maps(Local<Object> all,
-                          Local<Object> iflags,
-                          Local<Object> oflags,
-                          Local<Object> cflags,
-                          Local<Object> lflags,
-                          Local<Object> cc,
-                          Local<Object> jsactions,
-                          Local<Object> jsflushs,
-                          Local<Object> jsflows,
-                          Local<Object> jsbaudrates)
+void populate_symbol_maps(
+    Local<Object> all,
+    Local<Object> iflags,
+    Local<Object> oflags,
+    Local<Object> cflags,
+    Local<Object> lflags,
+    Local<Object> cc,
+    Local<Object> jsactions,
+    Local<Object> jsflushs,
+    Local<Object> jsflows,
+    Local<Object> jsbaudrates)
 {
     // no platform switches here, simply test for existance of questionable symbols
+    // _SAFE32 macro is used as a compile guard to spot symbol changes beyond 32 bit
 
     // c_iflag
+    #if    _SAFE32_8(IGNBRK,BRKINT,IGNPAR,PARMRK,INPCK,ISTRIP,INLCR,ICRNL) \
+        && _SAFE32_8(IUCLC,IXON,IXANY,IXOFF,IMAXBEL,IUTF8,0,0)
+
     TERMIOS_EXPORT(c_iflag, iflags, IGNBRK);
     TERMIOS_EXPORT(c_iflag, iflags, BRKINT);
     TERMIOS_EXPORT(c_iflag, iflags, IGNPAR);
@@ -34,67 +37,83 @@ void populate_symbol_maps(Local<Object> all,
     TERMIOS_EXPORT(c_iflag, iflags, INLCR);
     TERMIOS_EXPORT(c_iflag, iflags, IGNCR);
     TERMIOS_EXPORT(c_iflag, iflags, ICRNL);
-#if defined(IUCLC)
+    #ifdef IUCLC
     TERMIOS_EXPORT(c_iflag, iflags, IUCLC);
-#endif
+    #endif
     TERMIOS_EXPORT(c_iflag, iflags, IXON);
     TERMIOS_EXPORT(c_iflag, iflags, IXANY);
     TERMIOS_EXPORT(c_iflag, iflags, IXOFF);
     TERMIOS_EXPORT(c_iflag, iflags, IMAXBEL);
-#if defined(IUTF8)
+    #ifdef IUTF8
     TERMIOS_EXPORT(c_iflag, iflags, IUTF8);
-#endif
+    #endif
+
+    #else
+    #error "iflag not in 32 bit range"
+    #endif
 
     // c_oflag
+    #if    _SAFE32_8(OPOST,OLCUC,ONLCR,OCRNL,ONOCR,ONLRET,OFILL,OFDEL) \
+        && _SAFE32_8(NLDLY,CRDLY,TABDLY,BSDLY,VTDLY,FFDLY,TAB0,TAB3)   \
+        && _SAFE32_1(ONOEOT)
+
     TERMIOS_EXPORT(c_oflag, oflags, OPOST);
-#if defined(OLCUC)
+    #ifdef OLCUC
     TERMIOS_EXPORT(c_oflag, oflags, OLCUC);
-#endif
+    #endif
     TERMIOS_EXPORT(c_oflag, oflags, ONLCR);
     TERMIOS_EXPORT(c_oflag, oflags, OCRNL);
     TERMIOS_EXPORT(c_oflag, oflags, ONOCR);
     TERMIOS_EXPORT(c_oflag, oflags, ONLRET);
-#if defined(OFILL)
+    #ifdef OFILL
     TERMIOS_EXPORT(c_oflag, oflags, OFILL);
-#endif
-#if defined(OFDEL)
+    #endif
+    #ifdef OFDEL
     TERMIOS_EXPORT(c_oflag, oflags, OFDEL);
-#endif
-#if defined(NLDLY)
+    #endif
+    #ifdef NLDLY
     TERMIOS_EXPORT(c_oflag, oflags, NLDLY);
-#endif
-#if defined(CRDLY)
+    #endif
+    #ifdef CRDLY
     TERMIOS_EXPORT(c_oflag, oflags, CRDLY);
-#endif
-#if defined(TABDLY)
+    #endif
+    #ifdef TABDLY
     TERMIOS_EXPORT(c_oflag, oflags, TABDLY);
-#endif
-#if defined(BSDLY)
+    #endif
+    #ifdef BSDLY
     TERMIOS_EXPORT(c_oflag, oflags, BSDLY);
-#endif
-#if defined(VTDLY)
+    #endif
+    #ifdef VTDLY
     TERMIOS_EXPORT(c_oflag, oflags, VTDLY);
-#endif
-#if defined(FFDLY)
+    #endif
+    #ifdef FFDLY
     TERMIOS_EXPORT(c_oflag, oflags, FFDLY);
-#endif
-#if defined(TAB0)
+    #endif
+    #ifdef TAB0
     TERMIOS_EXPORT(c_oflag, oflags, TAB0);
-#endif
-#if defined(TAB3)
+    #endif
+    #ifdef TAB3
     TERMIOS_EXPORT(c_oflag, oflags, TAB3);
-#endif
-#if defined(ONOEOT)
+    #endif
+    #ifdef ONOEOT
     TERMIOS_EXPORT(c_oflag, oflags, ONOEOT);
-#endif
+    #endif
+
+    #else
+    #error "oflag not in 32 bit range"
+    #endif
 
     // c_cflag
-#if defined(CBAUD)
+    #if    _SAFE32_8(CBAUD,CBAUDEX,CSIZE,CS5,CS6,CS7,CS8,CSTOPB)           \
+        && _SAFE32_8(CREAD,PARENB,PARODD,HUPCL,CLOCAL,LOBLK,CIBAUD,CMSPAR) \
+        && _SAFE32_4(CRTSCTS,CCTS_OFLOW,CRTS_IFLOW,MDMBUF)
+
+    #ifdef CBAUD
     TERMIOS_EXPORT(c_cflag, cflags, CBAUD);
-#endif
-#if defined(CBAUDEX)
+    #endif
+    #ifdef CBAUDEX
     TERMIOS_EXPORT(c_cflag, cflags, CBAUDEX);
-#endif
+    #endif
     TERMIOS_EXPORT(c_cflag, cflags, CSIZE);
     TERMIOS_EXPORT(c_cflag, cflags, CS5);
     TERMIOS_EXPORT(c_cflag, cflags, CS6);
@@ -106,64 +125,76 @@ void populate_symbol_maps(Local<Object> all,
     TERMIOS_EXPORT(c_cflag, cflags, PARODD);
     TERMIOS_EXPORT(c_cflag, cflags, HUPCL);
     TERMIOS_EXPORT(c_cflag, cflags, CLOCAL);
-#if defined(LOBLK)
+    #ifdef LOBLK
     TERMIOS_EXPORT(c_cflag, cflags, LOBLK);
-#endif
-#if defined(CIBAUD)
+    #endif
+    #ifdef CIBAUD
     TERMIOS_EXPORT(c_cflag, cflags, CIBAUD);
-#endif
-#if defined(CMSPAR)
+    #endif
+    #ifdef CMSPAR
     TERMIOS_EXPORT(c_cflag, cflags, CMSPAR);
-#endif
+    #endif
     TERMIOS_EXPORT(c_cflag, cflags, CRTSCTS);
-#if defined(CCTS_OFLOW)
+    #ifdef CCTS_OFLOW
     TERMIOS_EXPORT(c_cflag, cflags, CCTS_OFLOW);
-#endif
-#if defined(CRTS_IFLOW)
+    #endif
+    #ifdef CRTS_IFLOW
     TERMIOS_EXPORT(c_cflag, cflags, CRTS_IFLOW);
-#endif
-#if defined(MDMBUF)
+    #endif
+    #ifdef MDMBUF
     TERMIOS_EXPORT(c_cflag, cflags, MDMBUF);
-#endif
+    #endif
+
+    #else
+    #error "cflag not in 32 bit range"
+    #endif
 
     // c_lflag
+    #if    _SAFE32_8(ISIG,ICANON,XCASE,ECHO,ECHOE,ECHOK,ECHONL,ECHOCTL)         \
+        && _SAFE32_8(ECHOPRT,ECHOKE,DEFECHO,FLUSHO,NOFLSH,TOSTOP,PENDIN,IEXTEN) \
+        && _SAFE32_4(ALTWERASE,EXTPROC,NOKERNINFO,0)
+
     TERMIOS_EXPORT(c_lflag, lflags, ISIG);
     TERMIOS_EXPORT(c_lflag, lflags, ICANON);
-#if defined(XCASE)
+    #ifdef XCASE
     TERMIOS_EXPORT(c_lflag, lflags, XCASE);
-#endif
+    #endif
     TERMIOS_EXPORT(c_lflag, lflags, ECHO);
     TERMIOS_EXPORT(c_lflag, lflags, ECHOE);
-#if defined(ECHOK)
+    #ifdef ECHOK
     TERMIOS_EXPORT(c_lflag, lflags, ECHOK);
-#endif
+    #endif
     TERMIOS_EXPORT(c_lflag, lflags, ECHONL);
     TERMIOS_EXPORT(c_lflag, lflags, ECHOCTL);
     TERMIOS_EXPORT(c_lflag, lflags, ECHOPRT);
     TERMIOS_EXPORT(c_lflag, lflags, ECHOKE);
-#if defined(DEFECHO)
+    #ifdef DEFECHO
     TERMIOS_EXPORT(c_lflag, lflags, DEFECHO);
-#endif
+    #endif
     TERMIOS_EXPORT(c_lflag, lflags, FLUSHO);
     TERMIOS_EXPORT(c_lflag, lflags, NOFLSH);
     TERMIOS_EXPORT(c_lflag, lflags, TOSTOP);
     TERMIOS_EXPORT(c_lflag, lflags, PENDIN);
     TERMIOS_EXPORT(c_lflag, lflags, IEXTEN);
-#if defined(ALTWERASE)
+    #ifdef ALTWERASE
     TERMIOS_EXPORT(c_lflag, lflags, ALTWERASE);
-#endif
-#if defined(EXTPROC)
+    #endif
+    #ifdef EXTPROC
     TERMIOS_EXPORT(c_lflag, lflags, EXTPROC);
-#endif
-#if defined(NOKERNINFO)
+    #endif
+    #ifdef NOKERNINFO
     TERMIOS_EXPORT(c_lflag, lflags, NOKERNINFO);
-#endif
+    #endif
+
+    #else
+    #error "lflag not in 32 bit range"
+    #endif
 
     // c_cc
     TERMIOS_EXPORT(c_cc, cc, VDISCARD);
-#if defined(VDSUSP)
+    #ifdef VDSUSP
     TERMIOS_EXPORT(c_cc, cc, VDSUSP);
-#endif
+    #endif
     TERMIOS_EXPORT(c_cc, cc, VEOF);
     TERMIOS_EXPORT(c_cc, cc, VEOL);
     TERMIOS_EXPORT(c_cc, cc, VEOL2);
@@ -175,14 +206,14 @@ void populate_symbol_maps(Local<Object> all,
     TERMIOS_EXPORT(c_cc, cc, VQUIT);
     TERMIOS_EXPORT(c_cc, cc, VREPRINT);
     TERMIOS_EXPORT(c_cc, cc, VSTART);
-#if defined(VSTATUS)
+    #ifdef VSTATUS
     TERMIOS_EXPORT(c_cc, cc, VSTATUS);
-#endif
+    #endif
     TERMIOS_EXPORT(c_cc, cc, VSTOP);
     TERMIOS_EXPORT(c_cc, cc, VSUSP);
-#if defined(VSWTCH)
+    #ifdef VSWTCH
     TERMIOS_EXPORT(c_cc, cc, VSWTCH);
-#endif
+    #endif
     TERMIOS_EXPORT(c_cc, cc, VTIME);
     TERMIOS_EXPORT(c_cc, cc, VWERASE);
 
@@ -190,9 +221,9 @@ void populate_symbol_maps(Local<Object> all,
     TERMIOS_EXPORT(actions, jsactions, TCSANOW);
     TERMIOS_EXPORT(actions, jsactions, TCSADRAIN);
     TERMIOS_EXPORT(actions, jsactions, TCSAFLUSH);
-#if defined(TCSASOFT)
+    #ifdef TCSASOFT
     TERMIOS_EXPORT(actions, jsactions, TCSASOFT);
-#endif
+    #endif
 
     // tcflush queue_selectors
     TERMIOS_EXPORT(flushs, jsflushs, TCIFLUSH);
@@ -222,63 +253,63 @@ void populate_symbol_maps(Local<Object> all,
     TERMIOS_EXPORT(baudrates, jsbaudrates, B9600);
     TERMIOS_EXPORT(baudrates, jsbaudrates, B19200);
     TERMIOS_EXPORT(baudrates, jsbaudrates, B38400);
-#if defined(B7200)
+    #ifdef B7200
     TERMIOS_EXPORT(baudrates, jsbaudrates, B7200);
-#endif
-#if defined(B14400)
+    #endif
+    #ifdef B14400
     TERMIOS_EXPORT(baudrates, jsbaudrates, B14400);
-#endif
-#if defined(B28800)
+    #endif
+    #ifdef B28800
     TERMIOS_EXPORT(baudrates, jsbaudrates, B28800);
-#endif
+    #endif
     TERMIOS_EXPORT(baudrates, jsbaudrates, B57600);
-#if defined(B76800)
+    #ifdef B76800
     TERMIOS_EXPORT(baudrates, jsbaudrates, B76800);
-#endif
+    #endif
     TERMIOS_EXPORT(baudrates, jsbaudrates, B115200);
     TERMIOS_EXPORT(baudrates, jsbaudrates, B230400);
-#if defined(B460800)
+    #ifdef B460800
     TERMIOS_EXPORT(baudrates, jsbaudrates, B460800);
-#endif
-#if defined(B500000)
+    #endif
+    #ifdef B500000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B500000);
-#endif
-#if defined(B576000)
+    #endif
+    #ifdef B576000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B576000);
-#endif
-#if defined(B921600)
+    #endif
+    #ifdef B921600
     TERMIOS_EXPORT(baudrates, jsbaudrates, B921600);
-#endif
-#if defined(B1000000)
+    #endif
+    #ifdef B1000000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B1000000);
-#endif
-#if defined(B1152000)
+    #endif
+    #ifdef B1152000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B1152000);
-#endif
-#if defined(B1500000)
+    #endif
+    #ifdef B1500000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B1500000);
-#endif
-#if defined(B2000000)
+    #endif
+    #ifdef B2000000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B2000000);
-#endif
-#if defined(B2500000)
+    #endif
+    #ifdef B2500000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B2500000);
-#endif
-#if defined(B3000000)
+    #endif
+    #ifdef B3000000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B3000000);
-#endif
-#if defined(B3500000)
+    #endif
+    #ifdef B3500000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B3500000);
-#endif
-#if defined(B4000000)
+    #endif
+    #ifdef B4000000
     TERMIOS_EXPORT(baudrates, jsbaudrates, B4000000);
-#endif
-#if defined(EXTA)
+    #endif
+    #ifdef EXTA
     TERMIOS_EXPORT(baudrates, jsbaudrates, EXTA);
-#endif
-#if defined(EXTB)
+    #endif
+    #ifdef EXTB
     TERMIOS_EXPORT(baudrates, jsbaudrates, EXTB);
-#endif
+    #endif
 }
 
 
@@ -329,12 +360,23 @@ NAN_MODULE_INIT(init) {
     MODULE_EXPORT("cfsetispeed", Nan::GetFunction(Nan::New<FunctionTemplate>(Cfsetispeed)).ToLocalChecked());
     MODULE_EXPORT("cfsetospeed", Nan::GetFunction(Nan::New<FunctionTemplate>(Cfsetospeed)).ToLocalChecked());
 
-    // objects
-    // NOTE: `SomeClass::init()` must be called prior usage in JS
-    //       to create the ctor function in memory.
-    //       For not exported classes simply call the init method here.
-    MODULE_EXPORT("CTermios", Nan::GetFunction(CTermios::init()).ToLocalChecked());
-    MODULE_EXPORT("CCBuffer", Nan::GetFunction(CCBuffer::init()).ToLocalChecked());
+    // explain termios structure
+    // EXPLAIN_MEMBERS --> {symbol: {offset: 0, width: 4}}
+    Local<Object> members = Nan::New<Object>();
+    EXPLAIN_MEMBER(members, struct termios, c_iflag);
+    EXPLAIN_MEMBER(members, struct termios, c_oflag);
+    EXPLAIN_MEMBER(members, struct termios, c_cflag);
+    EXPLAIN_MEMBER(members, struct termios, c_lflag);
+    EXPLAIN_MEMBER_ARRAY(members, struct termios, c_cc, cc_t);
+
+    Local<Object> termios_explain = Nan::New<Object>();
+    Nan::Set(termios_explain, Nan::New<String>("size").ToLocalChecked(), Nan::New<Number>(sizeof(struct termios)));
+    Nan::Set(termios_explain, Nan::New<String>("members").ToLocalChecked(), members);
+    MODULE_EXPORT("EXPLAIN", termios_explain);
 }
 
-NODE_MODULE(termios, init)
+#ifdef NAN_MODULE_WORKER_ENABLED
+    NAN_MODULE_WORKER_ENABLED(termios, init)
+#else
+    NODE_MODULE(termios, init)
+#endif
