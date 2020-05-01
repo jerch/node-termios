@@ -1,6 +1,6 @@
 ## Access termios settings from nodejs.
 
-The module exports a `Termios` class, that encapsulates termios struct data. 
+The module exports a `Termios` class, that encapsulates termios struct data:
 
 ### Properties
     
@@ -14,8 +14,8 @@ The module exports a `Termios` class, that encapsulates termios struct data.
     
 - `constructor(from?: number | ITermios | null)`  
   Create new `Termios` object. `from` can be a valid file descriptor (number),
-  another `Termios` object (copy constructor) or `null` (all data zeroed out,
-  currently the same as `undefined`).
+  another `Termios` object (copy constructor) or `null` (all data zeroed out).
+  Omtting `from` will try to load default values from `ttydefaults.h` (not supported by all platforms).
 - `loadFrom(fd: number): void`  
   Load termios data from file descriptor `fd`.
 - `writeTo(fd: number, action?: number): void`  

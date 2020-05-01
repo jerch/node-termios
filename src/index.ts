@@ -104,9 +104,12 @@ export class Termios implements ITermios {
         } else if (from instanceof Termios) {
             this._data = Buffer.from(from._data);
         } else if (from === undefined) {
-            // TODO: load defaults from ttydefaults.h
+            if (!native.load_ttydefaults(this._data)) {
+                console.warn('Termios: Loading ttydefaults.h not supported on this platform.');
+            }
         } else if (from !== null) {
-            // null explicitly loads empty termios data, anything else throws an error
+            // null explicitly loads empty termios data
+            // anything else throws an error
             throw new Error('unsupported from value');
         }
         // make termios primitives enumerable
