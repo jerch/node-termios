@@ -15,7 +15,7 @@ The module exports a `Termios` class, that encapsulates termios struct data:
 - `constructor(from?: number | ITermios | null)`  
   Create new `Termios` object. `from` can be a valid file descriptor (number),
   another `Termios` object (copy constructor) or `null` (all data zeroed out).
-  Omtting `from` will try to load default values from `ttydefaults.h` (not supported by all platforms).
+  Omitting `from` will try to load default values from `ttydefaults.h` (not supported by all platforms).
 - `loadFrom(fd: number): void`  
   Load termios data from file descriptor `fd`.
 - `writeTo(fd: number, action?: number): void`  
@@ -37,7 +37,7 @@ The module exports a `Termios` class, that encapsulates termios struct data:
   Convenient method to set termios data to cbreak mode (values taken from Python).
 
 The module further exports known symbols defined by the
-underlying termios.h (platform dependent) and low level functions under `.native`:
+underlying termios.h (platform dependent) and low level functions under `native`:
 
 - `ALL_SYMBOLS`: All known symbols.
 - `IFLAGS`: Input mode symbols.
@@ -55,9 +55,8 @@ underlying termios.h (platform dependent) and low level functions under `.native
 
 The low level function are direct mappings of the C functions,
 where `fd` should be a valid TTY file descriptor
-and `buffer` is a nodejs buffer of length `native.EXPLAIN.size`
-to hold the termios structure data. Additional enum like arguments
-are mapped in `native` (see listing above).
+and `buffer` is a nodejs buffer of termios struct size (see `native.EXPLAIN.size`).
+Additional enum like arguments are mapped in `native` (see listing above).
 
 Also see `termios` manpage for further details.
 
@@ -122,8 +121,8 @@ altered.writeTo(some_tty_fd);
 initial.writeTo(some_tty_fd);
 ```
 
-Note that in the interactive nodejs shell the standard filedescriptors are already
-customized by the nodejs env, and should not be handled like in the example above,
-or the terminal might break with the shell's expectations.
+Note that in the interactive nodejs shell the standard file descriptors are already
+customized by the nodejs env and should not be handled like in the example above,
+or the terminal might break with the shell expectations.
 
-For a silly yet slightly more advanced example, see `example.js`.
+For a silly yet slightly more advanced example, see [example.js](./example.js).

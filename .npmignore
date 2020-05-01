@@ -126,3 +126,5 @@ Makefile.gyp
 *.target.gyp.mk
 builderror.log
 npm-debug.log
+.travis.yml
+.vscode
