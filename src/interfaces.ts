@@ -239,6 +239,21 @@ export interface INative {
     EXPLAIN: ITermiosExplain;
 }
 
+export interface IDataAccessor {
+    BE: {
+        4: {
+            read: (b: Buffer, offset: number) => number;
+            write: (b: Buffer, value: number, offset: number) => number;
+        }
+    };
+    LE: {
+        4: {
+            read: (b: Buffer, offset: number) => number;
+            write: (b: Buffer, value: number, offset: number) => number;
+        }
+    };
+}
+
 /**
  * interface of Termios
  */

@@ -6,7 +6,7 @@ The module exports a `Termios` class, that encapsulates termios struct data:
     
 - `c_iflag`: Integer representing the input mode flags.
 - `c_oflag`: Integer representing the output mode flags.
-- `c_cflag`: Integer representing the character mode flags.
+- `c_cflag`: Integer representing the control mode flags.
 - `c_lflag`: Integer representing the local mode flags.
 - `c_cc`: Buffer representing the control code settings.
 
@@ -35,6 +35,8 @@ The module exports a `Termios` class, that encapsulates termios struct data:
   Convenient method to set termios data to raw mode (values taken from Python).
 - `setcbreak(): void`  
   Convenient method to set termios data to cbreak mode (values taken from Python).
+- `setcooked(): void`  
+  Convenient method to set termios data back to cooked mode.
 
 The module further exports known symbols defined by the
 underlying termios.h (platform dependent) and low level functions under `native`:

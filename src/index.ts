@@ -1,7 +1,7 @@
 if (process.platform === 'win32')
     throw new Error('unsupported platform');
 
-import {ITermios, INative} from './interfaces';
+import {ITermios, INative, IDataAccessor} from './interfaces';
 import * as path from 'path';
 import { endianness, platform } from 'os';
 export const native: INative = require(path.join('..', 'build', 'Release', 'termios.node'));
@@ -46,8 +46,11 @@ if (T_MEM.c_cflag.width !== 4) throw new Error('unexpected c_cflag type');
 if (T_MEM.c_lflag.width !== 4) throw new Error('unexpected c_lflag type');
 if (T_MEM.c_cc.elem_size !== 1) throw new Error('unexpected cc_t type');
 
-// Handles BE/LE 4 byte access.
-const ACCESSORS = {
+/**
+ * Handle buffer data access.
+ * We currently only support BE/LE with 4 bytes.
+ */
+const ACCESSORS: IDataAccessor  = {
     BE: {
         4: {
             read: (b: Buffer, offset: number) => b.readUInt32BE(offset),
@@ -62,41 +65,59 @@ const ACCESSORS = {
     }
 }
 
+/**
+ * Class holding `struct termios` data.
+ */
 export class Termios implements ITermios {
     private _data: Buffer;
 
+    /** Getter/setter for input flags. */
     public get c_iflag(): number {
-        return ACCESSORS[ENDIAN][T_MEM.c_iflag.width].read(this._data, T_MEM.c_iflag.offset);
+        return ACCESSORS[ENDIAN][4].read(this._data, T_MEM.c_iflag.offset);
     }
     public set c_iflag(value: number) {
-        ACCESSORS[ENDIAN][T_MEM.c_iflag.width].write(this._data, value, T_MEM.c_iflag.offset);
+        ACCESSORS[ENDIAN][4].write(this._data, value, T_MEM.c_iflag.offset);
     }
 
+    /** Getter/setter for output flags. */
     public get c_oflag(): number {
-        return ACCESSORS[ENDIAN][T_MEM.c_oflag.width].read(this._data, T_MEM.c_oflag.offset);
+        return ACCESSORS[ENDIAN][4].read(this._data, T_MEM.c_oflag.offset);
     }
     public set c_oflag(value: number) {
-        ACCESSORS[ENDIAN][T_MEM.c_oflag.width].write(this._data, value, T_MEM.c_oflag.offset);
+        ACCESSORS[ENDIAN][4].write(this._data, value, T_MEM.c_oflag.offset);
     }
 
+    /** Getter/setter for control flags. */
     public get c_cflag(): number {
-        return ACCESSORS[ENDIAN][T_MEM.c_cflag.width].read(this._data, T_MEM.c_cflag.offset);
+        return ACCESSORS[ENDIAN][4].read(this._data, T_MEM.c_cflag.offset);
     }
     public set c_cflag(value: number) {
-        ACCESSORS[ENDIAN][T_MEM.c_cflag.width].write(this._data, value, T_MEM.c_cflag.offset);
+        ACCESSORS[ENDIAN][4].write(this._data, value, T_MEM.c_cflag.offset);
     }
 
+    /** Getter/setter for local flags. */
     public get c_lflag(): number {
-        return ACCESSORS[ENDIAN][T_MEM.c_lflag.width].read(this._data, T_MEM.c_lflag.offset);
+        return ACCESSORS[ENDIAN][4].read(this._data, T_MEM.c_lflag.offset);
     }
     public set c_lflag(value: number) {
-        ACCESSORS[ENDIAN][T_MEM.c_lflag.width].write(this._data, value, T_MEM.c_lflag.offset);
+        ACCESSORS[ENDIAN][4].write(this._data, value, T_MEM.c_lflag.offset);
     }
 
+    /** Buffer to access control code settings. */
     public get c_cc(): Buffer {
         return this._data.subarray(T_MEM.c_cc.offset, T_MEM.c_cc.offset + T_MEM.c_cc.width);
     }
 
+    /**
+     * Create new termios object.
+     *
+     * `from` can be a valid file descriptor (number),
+     * another `Termios` object (copy constructor) or `null` (all data zeroed out).
+     * Omitting `from` will try to load default values from *ttydefaults.h*
+     * (not supported by all platforms).
+     *
+     * @param from Optional argument to pull termios settings from.
+     */
     constructor(from?: number | ITermios | null) {
         this._data = Buffer.from(Array(T_SIZE));
         if (typeof from === 'number') {
@@ -119,30 +140,63 @@ export class Termios implements ITermios {
 			Object.defineProperty(this, property, modified);
 		}
     }
+
+    /** Load termios data from file descriptor `fd`. */
     public loadFrom(fd: number): void {
         native.tcgetattr(fd, this._data);
     }
-    public writeTo(fd: number, action?: number): void {
-        if (typeof action === 'undefined')
-            action = s.TCSAFLUSH;
+
+    /**
+     * Write termios data to file descriptor `fd`.
+     *
+     * `action` should be one of `native.ACTION`
+     * (default: `TCSAFLUSH`).
+     */
+    public writeTo(fd: number, action: number = s.TCSAFLUSH): void {
         native.tcsetattr(fd, action, this._data);
     }
+
+    /** Return input channel baud rate setting as in `native.BAUD`. */
     public getInputSpeed(): number {
         return native.cfgetispeed(this._data);
     }
+
+    /** Return output channel baud rate setting as in `native.BAUD`. */
     public getOutputSpeed(): number {
         return native.cfgetospeed(this._data);
     }
-    public setInputSpeed(baudrate: number): void {
-        native.cfsetispeed(this._data, baudrate);
+
+    /**
+     * Set input channel baud rate.
+     *
+     * `speed` should be one of the baudrates in `native.BAUD`.
+     */
+    public setInputSpeed(speed: number): void {
+        native.cfsetispeed(this._data, speed);
     }
-    public setOutputSpeed(baudrate: number): void {
-        native.cfsetospeed(this._data, baudrate);
+
+    /**
+     * Set output channel baud rate.
+     *
+     * `speed` should be one of the baudrates in `native.BAUD`.
+     */
+    public setOutputSpeed(speed: number): void {
+        native.cfsetospeed(this._data, speed);
     }
-    public setSpeed(baudrate: number): void {
-        native.cfsetispeed(this._data, baudrate);
-        native.cfsetospeed(this._data, baudrate);
+
+    /**
+     * Set input and output channel baud rate.
+     *
+     * `speed` should be one of the baudrates in `native.BAUD`.
+     * @note Normally the input and output speed are entangled by the system,
+     * thus setting one would also change the other one.
+     */
+    public setSpeed(speed: number): void {
+        native.cfsetispeed(this._data, speed);
+        native.cfsetospeed(this._data, speed);
     }
+
+    /** Convenient method to set termios data to raw mode (flags taken from Python). */
     public setraw(): void {
         this.c_iflag &= ~(s.BRKINT | s.ICRNL | s.INPCK | s.ISTRIP | s.IXON);
         this.c_oflag &= ~s.OPOST;
@@ -152,16 +206,30 @@ export class Termios implements ITermios {
         this.c_cc[s.VMIN] = 1;
         this.c_cc[s.VTIME] = 0;
     }
+
+    /** Convenient method to set termios data to cbreak mode (flags taken from Python). */
     public setcbreak(): void {
         this.c_lflag &= ~(s.ECHO | s.ICANON);
         this.c_cc[s.VMIN] = 1;
         this.c_cc[s.VTIME] = 0;
     }
+
+    /**
+     * Convenient method to set termios data back to cooked mode.
+     *
+     * @note This method enables typical flags of cooked mode,
+     * like job control (BRKINT), NL/CR rewrites and the line editor
+     * (ICANON) with echoing (ECHO). This might differ from your
+     * expectations, as systems may use slightly different settings.
+     */
     public setcooked(): void {
         this.c_iflag = s.BRKINT | s.ICRNL | s.INPCK | s.ISTRIP | s.IXON | s.IGNPAR;
         this.c_oflag = s.OPOST | s.ONLCR;
         this.c_cflag |= s.CS8;
-        this.c_lflag = s.ECHOKE | s.ECHOCTL | s.ECHOK | s.ECHOE | s.ECHO | s.ICANON | s.IEXTEN | s.ISIG;
-        // FIXME: set c_cc values;
+        this.c_lflag = s.ECHOKE | s.ECHOCTL | s.ECHOE | s.ECHO | s.ICANON | s.IEXTEN | s.ISIG;
+        if (s.ECHOK) {
+            this.c_lflag |= s.ECHOK;
+        }
+        // FIXME: set c_cc values?
     }
 }
