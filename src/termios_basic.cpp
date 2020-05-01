@@ -308,3 +308,56 @@ NAN_METHOD(Cfsetospeed)
     }
     info.GetReturnValue().SetUndefined();
 }
+
+#if !defined(__sun) && !defined(__hpux) && !defined(_AIX)
+#define LOAD_TTY_DEFAULTS 1
+#include <sys/ttydefaults.h>
+#endif
+
+NAN_METHOD(Load_ttydefaults)
+{
+    Nan::HandleScope scope;
+    if (info.Length() != 1
+          || !info[0]->IsObject()) {
+        return Nan::ThrowError("Usage: load_ttydefaults(buffer)");
+    }
+    #ifdef LOAD_TTY_DEFAULTS
+    if (!Buffer::HasInstance(info[0]) || Buffer::Length(info[0]) != sizeof(struct termios)) {
+        return Nan::ThrowError("wrong buffer type");
+    }
+    struct termios* buf = (struct termios *) Buffer::Data(info[0]);
+    // load default flags
+    buf->c_iflag = TTYDEF_IFLAG;
+    buf->c_oflag = TTYDEF_OFLAG;
+    buf->c_cflag = TTYDEF_CFLAG;
+    buf->c_lflag = TTYDEF_LFLAG;
+    // load default cc
+    buf->c_cc[VEOF] = CEOF;
+    buf->c_cc[VEOL] = CEOL;
+    buf->c_cc[VERASE] = CERASE;
+    buf->c_cc[VINTR] = CINTR;
+    #ifdef VSTATUS
+    buf->c_cc[VSTATUS] = CSTATUS;
+    #endif
+    buf->c_cc[VKILL] = CKILL;
+    buf->c_cc[VMIN] = CMIN;
+    buf->c_cc[VQUIT] = CQUIT;
+    buf->c_cc[VSUSP] = CSUSP;
+    buf->c_cc[VTIME] = CTIME;
+    #ifdef VDSUSP
+    buf->c_cc[VDSUSP] = CDSUSP;
+    #endif
+    buf->c_cc[VSTART] = CSTART;
+    buf->c_cc[VSTOP] = CSTOP;
+    buf->c_cc[VLNEXT] = CLNEXT;
+    buf->c_cc[VDISCARD] = CDISCARD;
+    buf->c_cc[VWERASE] = CWERASE;
+    buf->c_cc[VREPRINT] = CREPRINT;
+    // set default speeds
+    cfsetispeed(buf, TTYDEF_SPEED);
+    cfsetospeed(buf, TTYDEF_SPEED);
+    info.GetReturnValue().Set(Nan::True());
+    #else
+    info.GetReturnValue().Set(Nan::False());
+    #endif
+}

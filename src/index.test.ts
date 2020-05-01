@@ -119,6 +119,7 @@ describe('Termios', () => {
     const t = new Termios(0);
     assert.notEqual(t.c_iflag, 0);
     assert.notEqual(t.c_oflag, 0);
+    assert.notEqual(t.c_cflag, 0);
     assert.notEqual(t.c_lflag, 0);
   });
   it('ctor from other Termios object', () => {
@@ -141,7 +142,29 @@ describe('Termios', () => {
     assert.deepEqual((t as any)._data, Buffer.from(Array(native.EXPLAIN.size)));
   });
   it('ctor from undefined should pull ttydefaults.h', () => {
-    // FIXME: to be implemented
+    // Note - ttydefaults.h not supported on solaris
+    const UNSUPPORTED = ['sunos', 'aix'];
+    const t = new Termios();
+    if (UNSUPPORTED.indexOf(platform()) !== -1) {
+      assert.equal(t.c_iflag, 0);
+      assert.equal(t.c_oflag, 0);
+      assert.equal(t.c_cflag, 0);
+      assert.equal(t.c_lflag, 0);
+      assert.deepEqual(t.c_cc, Buffer.from(Array(native.EXPLAIN.members.c_cc.width)));
+    } else {
+      assert.notEqual(t.c_iflag, 0);
+      assert.notEqual(t.c_oflag, 0);
+      assert.notEqual(t.c_cflag, 0);
+      assert.notEqual(t.c_lflag, 0);
+      // test typical default control codes from ttydefaults.h
+      const ctrl = (c: string) => c.charCodeAt(0) & 31;
+      assert.equal(t.c_cc[native.CC.VEOF], ctrl('d'));
+      assert.equal(t.c_cc[native.CC.VINTR], ctrl('c'));
+      assert.equal(t.c_cc[native.CC.VSTART], ctrl('q'));
+      assert.equal(t.c_cc[native.CC.VSTOP], ctrl('s'));
+      assert.equal(t.c_cc[native.CC.VSUSP], ctrl('z'));
+      assert.equal(t.c_cc[native.CC.VREPRINT], ctrl('r'));
+    }
   });
   it('ctor rejects invalid arguments', () => {
     // invalid fd

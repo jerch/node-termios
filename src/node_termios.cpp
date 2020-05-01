@@ -347,6 +347,7 @@ NAN_MODULE_INIT(init) {
     MODULE_EXPORT("isatty", Nan::GetFunction(Nan::New<FunctionTemplate>(Isatty)).ToLocalChecked());
     MODULE_EXPORT("ttyname", Nan::GetFunction(Nan::New<FunctionTemplate>(Ttyname)).ToLocalChecked());
     MODULE_EXPORT("ptsname", Nan::GetFunction(Nan::New<FunctionTemplate>(Ptsname)).ToLocalChecked());
+    MODULE_EXPORT("load_ttydefaults", Nan::GetFunction(Nan::New<FunctionTemplate>(Load_ttydefaults)).ToLocalChecked());
 
     // termios functions
     MODULE_EXPORT("tcgetattr", Nan::GetFunction(Nan::New<FunctionTemplate>(Tcgetattr)).ToLocalChecked());

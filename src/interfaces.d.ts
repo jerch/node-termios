@@ -225,6 +225,7 @@ export interface INative {
     cfgetospeed(buffer: Buffer): number;
     cfsetispeed(buffer: Buffer, speed: number): void;
     cfsetospeed(buffer: Buffer, speed: number): void;
+    load_ttydefaults(buffer: Buffer): boolean;
     ALL_SYMBOLS: IIFLAGS & IOFLAGS & ICFLAGS & ILFLAGS & ICC & IACTION & IFLUSH & IFLOW & IBAUD;
     IFLAGS: IIFLAGS;
     OFLAGS: IOFLAGS;
