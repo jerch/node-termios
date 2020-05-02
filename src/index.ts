@@ -69,7 +69,7 @@ const ACCESSORS: IDataAccessor  = {
  * Class holding `struct termios` data.
  */
 export class Termios implements ITermios {
-    private _data: Buffer;
+    private _data = Buffer.from(Array(T_SIZE));
 
     /** Getter/setter for input flags. */
     public get c_iflag(): number {
@@ -119,7 +119,11 @@ export class Termios implements ITermios {
      * @param from Optional argument to pull termios settings from.
      */
     constructor(from?: number | ITermios | null) {
-        this._data = Buffer.from(Array(T_SIZE));
+        // compatibility with old behavior
+        // FIXME: remove once we switch to ES6 target
+        if (!(this instanceof Termios)) {
+            return new Termios(from);
+        }
         if (typeof from === 'number') {
             this.loadFrom(from);
         } else if (from instanceof Termios) {
