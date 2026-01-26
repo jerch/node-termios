@@ -9,3 +9,4 @@ fi
 
 # --- real script starts here ---
 echo "stdin is a TTY: $(tty)"
+npm test
