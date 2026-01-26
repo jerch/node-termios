@@ -49,5 +49,5 @@ jobs:
         cache: 'npm'
     - run: npm i
     - run: npm run build --if-present
-    - shell: 'script -q /dev/null "bash {0}"'
+    - shell: 'script -q /dev/null "/bin/bash -e {0}"'
       run: npm test
