@@ -13,6 +13,7 @@
 #include <stdlib.h>
 
 // helper function
+NAN_METHOD(Getsize);
 NAN_METHOD(Isatty);
 NAN_METHOD(Ttyname);
 NAN_METHOD(Ptsname);
