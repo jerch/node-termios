@@ -23,10 +23,10 @@ NAN_METHOD(Getsize) {
         return Nan::ThrowError((std::string("get_size failed - ") + error).c_str());
     }
     Local<Object> obj = Nan::New<Object>();
-    Nan::Set(obj, "cols", Nan::New<Number>(winp.ws_col));
-    Nan::Set(obj, "rows", Nan::New<Number>(winp.ws_row));
-    Nan::Set(obj, "xpixel", Nan::New<Number>(winp.ws_xpixel));
-    Nan::Set(obj, "ypixel", Nan::New<Number>(winp.ws_ypixel));
+    Nan::Set(obj, Nan::New<String>("cols").ToLocalChecked(), Nan::New<Number>(winp.ws_col));
+    Nan::Set(obj, Nan::New<String>("rows").ToLocalChecked(), Nan::New<Number>(winp.ws_row));
+    Nan::Set(obj, Nan::New<String>("xpixel").ToLocalChecked(), Nan::New<Number>(winp.ws_xpixel));
+    Nan::Set(obj, Nan::New<String>("ypixel").ToLocalChecked(), Nan::New<Number>(winp.ws_ypixel));
     info.GetReturnValue().Set(obj);
 }
 
