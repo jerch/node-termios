@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-if [ -z "$FORCED_TTY" ] && [ -t 0 ]; then
-  # re‑exec ourselves under script(1), using a pseudo‑tty
-  FORCED_TTY=1 script -q /dev/null "$0" "$@"
-  exit $?
+# Re‑exec under a fresh pseudo‑tty once
+if [ -z "$FORCED_TTY" ]; then
+  export FORCED_TTY=1
+  # -q: quiet, -t 0: disable timing, -F: flush after each write (BSD script)
+  exec script -q -t 0 /dev/null /bin/bash "$0" "$@"
 fi
 
 # --- real script starts here ---
