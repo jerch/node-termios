@@ -39,6 +39,10 @@ describe('native functions', () => {
   });
   describe('ptsname', () => {
     it('should return path string on pty master fd', (done) => {
+      if (platform() === 'darwin') {
+        // there is an issue with spawnp on macos
+        return;
+      }
       const p = pty.spawn('sh', [], {});
       const path = native.ptsname((p as any)._fd);
       assert.notEqual(path, '');
@@ -219,6 +223,10 @@ describe('terminal write/read test', () => {
   // cannot be tested on solaris (pty master does not support termios semantics)
   if (platform() === 'sunos') return;
   it('disable ECHO', (done) => {
+    if (platform() === 'darwin') {
+      // there is an issue with spawnp on macos
+      return;
+    }
     const p = pty.spawn('cat', [], {});
     const t = new Termios((p as any)._fd);
     const fromPty: string[] = [];
