@@ -9,13 +9,33 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/ioctl.h>
+
+
+NAN_METHOD(Getsize) {
+    if (info.Length() != 1 || !info[0]->IsNumber())
+        return Nan::ThrowError("usage: getsize(fd)");
+
+    struct winsize winp = winsize();
+    int res = ioctl(info[0]->Int32Value(Nan::GetCurrentContext()).ToChecked(), TIOCGWINSZ, &winp);
+    if (res == -1) {
+        std::string error(strerror(errno));
+        return Nan::ThrowError((std::string("get_size failed - ") + error).c_str());
+    }
+    Local<Object> obj = Nan::New<Object>();
+    SET(obj, "cols", Nan::New<Number>(winp.ws_col));
+    SET(obj, "rows", Nan::New<Number>(winp.ws_row));
+    SET(obj, "xpixel", Nan::New<Number>(winp.ws_xpixel));
+    SET(obj, "ypixel", Nan::New<Number>(winp.ws_ypixel));
+    info.GetReturnValue().Set(obj);
+}
 
 
 NAN_METHOD(Isatty)
 {
     Nan::HandleScope scope;
     if (info.Length() != 1 || !info[0]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.isatty(fd)");
+        return Nan::ThrowError("usage: isatty(fd)");
     }
     int tty = isatty(Nan::To<int>(info[0]).FromJust());
     if (!tty && errno == EBADF) {
@@ -30,7 +50,7 @@ NAN_METHOD(Ttyname)
 {
     Nan::HandleScope scope;
     if (info.Length() != 1 || !info[0]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.ttyname(fd)");
+        return Nan::ThrowError("usage: ttyname(fd)");
     }
     #ifdef SOLARIS
     #define _POSIX_PTHREAD_SEMANTICS
@@ -46,7 +66,6 @@ NAN_METHOD(Ttyname)
  * ptsname_r shims for various platforms without native implementation.
  */
 #ifdef __APPLE__
-#include <sys/ioctl.h>
 #include <sys/stat.h>
 int ptsname_r_darwin(int fd, char *buf, size_t buflen) {
     if (!isatty(fd)) {
@@ -74,7 +93,6 @@ int ptsname_r_darwin(int fd, char *buf, size_t buflen) {
 
 #ifdef __FreeBSD__
 #include <sys/param.h>
-#include <sys/ioctl.h>
 #include <paths.h>
 int ptsname_r_freebsd(int fd, char *buf, size_t buflen) {
     if(ioctl(fd, TIOCPTMASTER)) {
@@ -101,7 +119,7 @@ NAN_METHOD(Ptsname)
 {
     Nan::HandleScope scope;
     if (info.Length() != 1 || !info[0]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.ptsname(fd)");
+        return Nan::ThrowError("usage: ptsname(fd)");
     }
     #ifdef SOLARIS
         // solaris claims to have thread-safe ptsname
@@ -176,7 +194,7 @@ NAN_METHOD(Tcsendbreak)
     if (info.Length() != 2
           || !info[0]->IsNumber()
           || !info[1]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.tcsendbreak(fd, duration)");
+        return Nan::ThrowError("usage: tcsendbreak(fd, duration)");
     }
     int res;
     TEMP_FAILURE_RETRY(res = tcsendbreak(Nan::To<int>(info[0]).FromJust(), Nan::To<int>(info[1]).FromJust()));
@@ -192,7 +210,7 @@ NAN_METHOD(Tcdrain)
 {
     Nan::HandleScope scope;
     if (info.Length() != 1 || !info[0]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.tcdrain(fd)");
+        return Nan::ThrowError("usage: tcdrain(fd)");
     }
     int res;
     TEMP_FAILURE_RETRY(res = tcdrain(Nan::To<int>(info[0]).FromJust()));
@@ -210,7 +228,7 @@ NAN_METHOD(Tcflush)
     if (info.Length() != 2
           || !info[0]->IsNumber()
           || !info[1]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.tcflush(fd, queue_selector)");
+        return Nan::ThrowError("usage: tcflush(fd, queue_selector)");
     }
     int res;
     TEMP_FAILURE_RETRY(res = tcflush(Nan::To<int>(info[0]).FromJust(), Nan::To<int>(info[1]).FromJust()));
@@ -228,7 +246,7 @@ NAN_METHOD(Tcflow)
     if (info.Length() != 2
           || !info[0]->IsNumber()
           || !info[1]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.tcflow(fd, action)");
+        return Nan::ThrowError("usage: tcflow(fd, action)");
     }
     int res;
     TEMP_FAILURE_RETRY(res = tcflow(Nan::To<int>(info[0]).FromJust(), Nan::To<int>(info[1]).FromJust()));
@@ -245,7 +263,7 @@ NAN_METHOD(Cfgetispeed)
     Nan::HandleScope scope;
     if (info.Length() != 1
           || !info[0]->IsObject()) {
-        return Nan::ThrowError("usage: termios.cfgetispeed(buffer)");
+        return Nan::ThrowError("usage: cfgetispeed(buffer)");
     }
     if (!Buffer::HasInstance(info[0]) || Buffer::Length(info[0]) != sizeof(struct termios)) {
         return Nan::ThrowError("wrong buffer type");
@@ -260,7 +278,7 @@ NAN_METHOD(Cfgetospeed)
     Nan::HandleScope scope;
     if (info.Length() != 1
           || !info[0]->IsObject()) {
-        return Nan::ThrowError("usage: termios.cfgetospeed(buffer)");
+        return Nan::ThrowError("usage: cfgetospeed(buffer)");
     }
     if (!Buffer::HasInstance(info[0]) || Buffer::Length(info[0]) != sizeof(struct termios)) {
         return Nan::ThrowError("wrong buffer type");
@@ -276,7 +294,7 @@ NAN_METHOD(Cfsetispeed)
     if (info.Length() != 2
           || !info[0]->IsObject()
           || !info[1]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.cfsetispeed(buffer, speed)");
+        return Nan::ThrowError("usage: cfsetispeed(buffer, speed)");
     }
     if (!Buffer::HasInstance(info[0]) || Buffer::Length(info[0]) != sizeof(struct termios)) {
         return Nan::ThrowError("wrong buffer type");
@@ -296,7 +314,7 @@ NAN_METHOD(Cfsetospeed)
     if (info.Length() != 2
           || !info[0]->IsObject()
           || !info[1]->IsNumber()) {
-        return Nan::ThrowError("usage: termios.cfsetospeed(buffer, speed)");
+        return Nan::ThrowError("usage: cfsetospeed(buffer, speed)");
     }
     if (!Buffer::HasInstance(info[0]) || Buffer::Length(info[0]) != sizeof(struct termios)) {
         return Nan::ThrowError("wrong buffer type");
