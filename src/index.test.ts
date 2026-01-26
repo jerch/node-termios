@@ -8,6 +8,10 @@ import { platform } from 'os';
  */
 
 describe('native functions', () => {
+  describe('getsize', () => {
+    const ttySize = native.getsize(0);
+    console.log(ttySize);
+  });
   describe('isatty', () => {
     it('true on stdin', () => {
       assert.equal(native.isatty(0), true);

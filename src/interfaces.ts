@@ -212,6 +212,7 @@ interface ITermiosExplain {
     }
 }
 export interface INative {
+    getsize(fd: number): { 'cols': number; 'rows': number; 'xpixel': number; 'ypixel': number; };
     isatty(fd: number): boolean;
     ttyname(fd: number): string;
     ptsname(fd: number): string;
