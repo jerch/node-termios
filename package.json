@@ -25,7 +25,7 @@
   "author": "Joerg Breitbart <j.breitbart@netzkolchose.de>",
   "license": "MIT",
   "dependencies": {
-    "nan": "^2.14.1"
+    "nan": "^2.24.0"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
