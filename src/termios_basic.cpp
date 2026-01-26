@@ -17,16 +17,16 @@ NAN_METHOD(Getsize) {
         return Nan::ThrowError("usage: getsize(fd)");
 
     struct winsize winp = winsize();
-    int res = ioctl(info[0]->Int32Value(Nan::GetCurrentContext()).ToChecked(), TIOCGWINSZ, &winp);
+    int res = ioctl(Nan::To<int>(info[0]).FromJust(), TIOCGWINSZ, &winp);
     if (res == -1) {
         std::string error(strerror(errno));
         return Nan::ThrowError((std::string("get_size failed - ") + error).c_str());
     }
     Local<Object> obj = Nan::New<Object>();
-    SET(obj, "cols", Nan::New<Number>(winp.ws_col));
-    SET(obj, "rows", Nan::New<Number>(winp.ws_row));
-    SET(obj, "xpixel", Nan::New<Number>(winp.ws_xpixel));
-    SET(obj, "ypixel", Nan::New<Number>(winp.ws_ypixel));
+    Nan::Set(obj, "cols", Nan::New<Number>(winp.ws_col));
+    Nan::Set(obj, "rows", Nan::New<Number>(winp.ws_row));
+    Nan::Set(obj, "xpixel", Nan::New<Number>(winp.ws_xpixel));
+    Nan::Set(obj, "ypixel", Nan::New<Number>(winp.ws_ypixel));
     info.GetReturnValue().Set(obj);
 }
 
