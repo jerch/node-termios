@@ -13,6 +13,8 @@
 #include <stdlib.h>
 
 // helper function
+NAN_METHOD(Tcgetwinsize);
+NAN_METHOD(Tcsetwinsize);
 NAN_METHOD(Isatty);
 NAN_METHOD(Ttyname);
 NAN_METHOD(Ptsname);

@@ -8,6 +8,30 @@ import { platform } from 'os';
  */
 
 describe('native functions', () => {
+  describe('tcgetwinsize/tcsetwinsize', () => {
+    it('get size should not crash and yield numbers', () => {
+      const ttySize = native.tcgetwinsize(0);
+      assert.equal(Number.isInteger(ttySize.cols), true);
+      assert.equal(Number.isInteger(ttySize.rows), true);
+      assert.equal(Number.isInteger(ttySize.xpixel), true);
+      assert.equal(Number.isInteger(ttySize.ypixel), true);
+    });
+    it('set size should not crash and yield numbers', () => {
+      const ttySize = native.tcsetwinsize(0, 80, 25, 800, 600);
+      assert.equal(ttySize.cols, 80);
+      assert.equal(ttySize.rows, 25);
+      assert.equal(ttySize.xpixel, 800);
+      assert.equal(ttySize.ypixel, 600);
+    });
+    it('get after set should yield correct numbers', () => {
+      native.tcsetwinsize(0, 100, 30, 900, 700);
+      const ttySize = native.tcgetwinsize(0);
+      assert.equal(ttySize.cols, 100);
+      assert.equal(ttySize.rows, 30);
+      assert.equal(ttySize.xpixel, 900);
+      assert.equal(ttySize.ypixel, 700);
+    });
+  });
   describe('isatty', () => {
     it('true on stdin', () => {
       assert.equal(native.isatty(0), true);

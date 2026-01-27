@@ -211,7 +211,17 @@ interface ITermiosExplain {
         };
     }
 }
+
+export interface IWinsize {
+    'cols': number;
+    'rows': number;
+    'xpixel': number;
+    'ypixel': number;
+}
+
 export interface INative {
+    tcgetwinsize(fd: number): IWinsize;
+    tcsetwinsize(fd: number, cols: number, rows: number, xpixel: number, ypixel: number): IWinsize;
     isatty(fd: number): boolean;
     ttyname(fd: number): string;
     ptsname(fd: number): string;

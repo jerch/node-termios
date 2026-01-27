@@ -62,6 +62,10 @@ Additional enum like arguments are mapped in `native` (see listing above).
 
 Also see `termios` manpage for further details.
 
+- `tcgetwinsize(fd: number): IWinsize`
+  Return the TTY size as `{cols, rows, xpixel, ypixel}`. Throws if `fd` is not a valid TTY file descriptor.
+- `tcsetwinsize(fd: number, cols: number, rows: number, xpixel: number, ypixel: number): IWinsize`
+  Set the TTY size and returns the new values. Throws if `fd` is not a valid TTY file descriptor.
 - `isatty(fd: number): boolean`  
   Test if file descriptor `fd` is a tty. Might throw if `fd` is not valid.
 - `ttyname(fd: number): string`  
@@ -87,12 +91,35 @@ Also see `termios` manpage for further details.
 
 ### Examples
 
-The example demostrates how to switch off/on echoing on STDIN:
+This example demostrates how to use the SIGWINCH signal to retrieve size changes:
+```javascript
+const { native: { tcgetwinsize } } = require('node-termios');
+
+// file descriptor of STDIN
+const STDIN_FD = 0;
+
+// needed to keep the process running
+// (not needed if you keep the event loop running by other means)
+process.stdin.resume();
+
+// register a signal handler for SIGWINCH
+process.on('SIGWINCH', () => {
+  console.log('TTY size:', tcgetwinsize(STDIN_FD));
+});
+```
+There is also [example_SIGWINCH.js](./example_SIGWINCH.js),
+which can be run from this repo to demostrate this use case.
+
+
+This example demostrates how to switch off/on echoing on STDIN:
 ```javascript
 const { Termios, native: { LFLAGS } } = require('node-termios');
 
+// file descriptor of STDIN
+const STDIN_FD = 0;
+
 // load termios data from STDIN
-var t = new Termios(0);
+var t = new Termios(STDIN_FD);
 // disable ECHO (not yet written)
 t.c_lflag &= ~LFLAGS.ECHO;
 // write back to STDIN
@@ -102,7 +129,7 @@ t.writeTo(0);
 
 // switch on again when done
 t.c_lflag |= LFLAGS.ECHO;
-t.writeTo(0);
+t.writeTo(STDIN_FD);
 ```
 
 A typical usage pattern seen in C is to store the settings,
