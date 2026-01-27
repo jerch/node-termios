@@ -140,8 +140,10 @@ export class Termios implements ITermios {
         // make termios primitives enumerable
         for(const property of ['c_iflag', 'c_oflag', 'c_cflag', 'c_lflag', 'c_cc']) {
 			const desc = Object.getOwnPropertyDescriptor(Termios.prototype, property);
-			const modified = Object.assign(desc, {enumerable: true});
-			Object.defineProperty(this, property, modified);
+            if (desc) {
+                const modified = Object.assign(desc, {enumerable: true});
+                Object.defineProperty(this, property, modified);
+            }
 		}
     }
 
