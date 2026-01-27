@@ -12,15 +12,43 @@
 #include <sys/ioctl.h>
 
 
-NAN_METHOD(Getsize) {
+NAN_METHOD(Tcgetwinsize) {
     if (info.Length() != 1 || !info[0]->IsNumber())
-        return Nan::ThrowError("usage: getsize(fd)");
+        return Nan::ThrowError("usage: tcgetwinsize(fd)");
 
     struct winsize winp = winsize();
     int res = ioctl(Nan::To<int>(info[0]).FromJust(), TIOCGWINSZ, &winp);
     if (res == -1) {
         std::string error(strerror(errno));
-        return Nan::ThrowError((std::string("get_size failed - ") + error).c_str());
+        return Nan::ThrowError((std::string("tcgetwinsize failed - ") + error).c_str());
+    }
+    Local<Object> obj = Nan::New<Object>();
+    Nan::Set(obj, Nan::New<String>("cols").ToLocalChecked(), Nan::New<Number>(winp.ws_col));
+    Nan::Set(obj, Nan::New<String>("rows").ToLocalChecked(), Nan::New<Number>(winp.ws_row));
+    Nan::Set(obj, Nan::New<String>("xpixel").ToLocalChecked(), Nan::New<Number>(winp.ws_xpixel));
+    Nan::Set(obj, Nan::New<String>("ypixel").ToLocalChecked(), Nan::New<Number>(winp.ws_ypixel));
+    info.GetReturnValue().Set(obj);
+}
+
+
+NAN_METHOD(Tcsetwinsize) {
+    if (info.Length() != 5
+            || !info[0]->IsNumber()
+            || !info[1]->IsNumber()
+            || !info[2]->IsNumber()
+            || !info[3]->IsNumber()
+            || !info[4]->IsNumber())
+        return Nan::ThrowError("usage: tcsetwinsize(fd, cols, rows, xpixel, ypixel)");
+
+    struct winsize winp = winsize();
+    winp.ws_col    = Nan::To<int>(info[1]).FromJust();
+    winp.ws_row    = Nan::To<int>(info[2]).FromJust();
+    winp.ws_xpixel = Nan::To<int>(info[3]).FromJust();
+    winp.ws_ypixel = Nan::To<int>(info[4]).FromJust();
+    int res = ioctl(Nan::To<int>(info[0]).FromJust(), TIOCSWINSZ, &winp);
+    if (res == -1) {
+        std::string error(strerror(errno));
+        return Nan::ThrowError((std::string("tcsetwinsize failed - ") + error).c_str());
     }
     Local<Object> obj = Nan::New<Object>();
     Nan::Set(obj, Nan::New<String>("cols").ToLocalChecked(), Nan::New<Number>(winp.ws_col));
