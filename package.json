@@ -20,7 +20,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/jerch/node-termios.git"
+    "url": "git+https://github.com/jerch/node-termios.git"
   },
   "author": "Joerg Breitbart <j.breitbart@netzkolchose.de>",
   "license": "MIT",
